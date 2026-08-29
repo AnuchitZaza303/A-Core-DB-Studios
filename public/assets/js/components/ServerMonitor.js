@@ -447,7 +447,7 @@ export const ServerMonitor = {
                                 <th class="px-4 py-3">User & Host</th>
                                 <th class="px-4 py-3">Database</th>
                                 <th class="px-4 py-3">Command / Activity</th>
-                                <th class="px-4 py-3">Duration (หลอดเวลา)</th>
+                                <th class="px-4 py-3">Duration & Progress (เวลา / หลอด % ทำงาน)</th>
                                 <th class="px-4 py-3">State</th>
                                 <th class="px-4 py-3">Info / Query</th>
                                 <th class="px-4 py-3 text-right">Action</th>
@@ -534,33 +534,75 @@ export const ServerMonitor = {
                     </div>
                 `;
             } else {
-                // คำสั่ง SQL ที่กำลังประมวลผลอยู่จริง (Active Execution Time)
-                const timePct = Math.min(100, Math.max(8, Math.round((time / 30) * 100)));
-                let timeBarColor = 'bg-emerald-500';
-                let timeLabel = 'Active';
-                let timeTextClass = 'text-emerald-600 dark:text-emerald-400 font-bold';
+                // Active SQL Query / Fetch Process
+                const isSendingData = p.State && p.State.toLowerCase().includes('send');
+                const isSorting = p.State && p.State.toLowerCase().includes('sort');
+                const isCopying = p.State && p.State.toLowerCase().includes('copy');
+                const isUpdating = p.State && (p.State.toLowerCase().includes('update') || p.State.toLowerCase().includes('write'));
 
-                if (time > 30) {
-                    timeBarColor = 'bg-rose-500 animate-pulse';
-                    timeLabel = 'Slow Query';
-                    timeTextClass = 'text-rose-600 dark:text-rose-400 font-bold';
-                } else if (time > 5) {
-                    timeBarColor = 'bg-amber-500';
-                    timeLabel = 'Running';
-                    timeTextClass = 'text-amber-600 dark:text-amber-400 font-bold';
+                let pctVal = null;
+                if (p.Progress !== null && p.Progress !== undefined && !isNaN(p.Progress)) {
+                    pctVal = p.Progress <= 1.0 && p.Progress > 0 ? Math.round(p.Progress * 100) : Math.min(100, Math.round(p.Progress));
                 }
 
-                durationHtml = `
-                    <div class="space-y-1 w-28">
-                        <div class="flex items-center justify-between text-[11px]">
-                            <span class="font-mono ${timeTextClass}">${timeStr}</span>
-                            <span class="text-[9px] font-sans ${time > 30 ? 'text-rose-500 font-bold' : 'text-emerald-500 font-semibold'}">${timeLabel}</span>
+                // If DB reported explicit progress percentage (e.g. MariaDB Progress)
+                if (pctVal !== null) {
+                    durationHtml = `
+                        <div class="space-y-1 w-36">
+                            <div class="flex items-center justify-between text-[11px]">
+                                <span class="font-mono text-emerald-400 font-bold">${timeStr}</span>
+                                <span class="text-[10px] font-mono font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.2 rounded border border-indigo-500/20">${pctVal}%</span>
+                            </div>
+                            <div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden p-0.5 border border-slate-700/50">
+                                <div class="h-full rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400 transition-all duration-300 shadow-xs shadow-indigo-500" style="width: ${Math.max(5, pctVal)}%"></div>
+                            </div>
+                            <div class="text-[9px] text-cyan-400 flex items-center gap-1 font-sans font-medium">
+                                <i class="fa-solid fa-spinner fa-spin text-[8px]"></i>
+                                <span>กำลังดึงข้อมูล (${pctVal}%)</span>
+                            </div>
                         </div>
-                        <div class="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-                            <div class="h-full rounded-full transition-all duration-300 ${timeBarColor}" style="width: ${timePct}%"></div>
+                    `;
+                } else {
+                    // Dynamic Active Query Progress Bar & Stage Indicator
+                    const timePct = Math.min(95, Math.max(15, Math.round((time / 10) * 100)));
+                    let activityLabel = 'กำลังประมวลผล';
+                    let barGradient = 'from-indigo-500 to-cyan-400';
+
+                    if (isSendingData) {
+                        activityLabel = 'กำลังดึงข้อมูล...';
+                        barGradient = 'from-cyan-500 via-indigo-500 to-emerald-400';
+                    } else if (isSorting) {
+                        activityLabel = 'กำลังจัดเรียง...';
+                        barGradient = 'from-amber-500 to-indigo-500';
+                    } else if (isCopying) {
+                        activityLabel = 'กำลังคัดลอกตาราง...';
+                        barGradient = 'from-purple-500 to-indigo-500';
+                    } else if (isUpdating) {
+                        activityLabel = 'กำลังบันทึกข้อมูล...';
+                        barGradient = 'from-rose-500 to-amber-500';
+                    }
+
+                    if (time > 30) {
+                        barGradient = 'from-rose-500 to-red-600 animate-pulse';
+                        activityLabel = 'Slow Query (>30s)';
+                    }
+
+                    durationHtml = `
+                        <div class="space-y-1 w-36">
+                            <div class="flex items-center justify-between text-[11px]">
+                                <span class="font-mono ${time > 30 ? 'text-rose-400 font-bold' : 'text-emerald-400 font-bold'}">${timeStr}</span>
+                                <span class="text-[10px] font-mono font-bold text-cyan-400">${timePct}%</span>
+                            </div>
+                            <div class="w-full h-2 rounded-full bg-slate-800 overflow-hidden p-0.5 border border-slate-700/50">
+                                <div class="h-full rounded-full bg-gradient-to-r ${barGradient} transition-all duration-300 animate-pulse" style="width: ${timePct}%"></div>
+                            </div>
+                            <div class="text-[9px] text-slate-400 flex items-center gap-1 font-sans">
+                                <span class="w-1.5 h-1.5 rounded-full ${time > 30 ? 'bg-rose-500 animate-ping' : 'bg-emerald-500 animate-ping'}"></span>
+                                <span class="${time > 30 ? 'text-rose-400 font-semibold' : 'text-slate-300'}">${activityLabel}</span>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
             }
 
             return `

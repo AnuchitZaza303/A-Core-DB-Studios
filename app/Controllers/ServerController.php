@@ -65,8 +65,47 @@ class ServerController
     public function processes(): void
     {
         try {
-            $processes = Database::fetchAll("SHOW FULL PROCESSLIST");
-            Response::success($processes);
+            $processes = [];
+            try {
+                // Query information_schema.PROCESSLIST which includes MariaDB PROGRESS column
+                $processes = Database::fetchAll("
+                    SELECT 
+                        ID AS Id,
+                        USER AS `User`,
+                        HOST AS `Host`,
+                        DB AS `db`,
+                        COMMAND AS `Command`,
+                        TIME AS `Time`,
+                        STATE AS `State`,
+                        INFO AS `Info`,
+                        PROGRESS AS `Progress`
+                    FROM information_schema.PROCESSLIST
+                    ORDER BY TIME DESC, ID ASC
+                ");
+            } catch (Exception $e1) {
+                // Fallback to standard SHOW FULL PROCESSLIST
+                $processes = Database::fetchAll("SHOW FULL PROCESSLIST");
+            }
+
+            $normalized = [];
+            foreach ($processes as $proc) {
+                $item = [];
+                $item['Id'] = $proc['Id'] ?? $proc['ID'] ?? $proc['id'] ?? 0;
+                $item['User'] = $proc['User'] ?? $proc['USER'] ?? $proc['user'] ?? '';
+                $item['Host'] = $proc['Host'] ?? $proc['HOST'] ?? $proc['host'] ?? '';
+                $item['db'] = $proc['db'] ?? $proc['Db'] ?? $proc['DB'] ?? null;
+                $item['Command'] = $proc['Command'] ?? $proc['COMMAND'] ?? $proc['command'] ?? '';
+                $item['Time'] = $proc['Time'] ?? $proc['TIME'] ?? $proc['time'] ?? 0;
+                $item['State'] = $proc['State'] ?? $proc['STATE'] ?? $proc['state'] ?? '';
+                $item['Info'] = $proc['Info'] ?? $proc['INFO'] ?? $proc['info'] ?? '';
+                
+                $rawProgress = $proc['Progress'] ?? $proc['PROGRESS'] ?? $proc['progress'] ?? null;
+                $item['Progress'] = ($rawProgress !== null && $rawProgress !== '') ? round((float)$rawProgress, 1) : null;
+
+                $normalized[] = $item;
+            }
+
+            Response::success($normalized);
         } catch (Exception $e) {
             Response::error($e->getMessage());
         }
