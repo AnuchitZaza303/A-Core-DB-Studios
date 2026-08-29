@@ -40,9 +40,27 @@ class AuthController
         Session::set('app_authenticated', true);
         Session::set('app_user', $username);
 
+        // Auto-connect to database if enabled
+        if (!empty($config['auto_connect_db']) && !Database::isConnected()) {
+            $defaultConn = [
+                'host' => $config['default_host'] ?? '127.0.0.1',
+                'port' => (int)($config['default_port'] ?? 3306),
+                'user' => $config['default_user'] ?? 'root',
+                'password' => $config['default_password'] ?? '',
+                'charset' => 'utf8mb4',
+            ];
+            try {
+                Database::connect($defaultConn);
+                Session::setConnection($defaultConn);
+            } catch (\Exception $e) {
+                // If auto-connect fails, the user will see the connection modal to enter credentials manually
+            }
+        }
+
         Response::success([
             'authenticated' => true,
             'username' => $username,
+            'db_connected' => Database::isConnected(),
         ], 'เข้าสู่ระบบ A-Core Studio สำเร็จ');
     }
 
