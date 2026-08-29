@@ -222,7 +222,7 @@ export const Header = {
         const disconnectBtn = document.getElementById('header-disconnect-btn');
         if (disconnectBtn) {
             disconnectBtn.onclick = () => {
-                const isAppAuth = store.getState().appAuth.required;
+                const isAppAuth = !!store.getState().appAuth?.required;
                 Modal.custom({
                     title: '<i class="fa-solid fa-power-off text-rose-500 mr-2"></i> ออกจากระบบ / ล็อกระบบ',
                     bodyHtml: `

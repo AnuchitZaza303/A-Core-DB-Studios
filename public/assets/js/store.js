@@ -33,6 +33,9 @@ class Store {
     }
 
     getState() {
+        if (!this.state.appAuth) {
+            this.state.appAuth = { required: true, authenticated: false, username: null };
+        }
         return this.state;
     }
 

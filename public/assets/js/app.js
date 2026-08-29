@@ -171,9 +171,10 @@ class App {
     async showConnectionModal() {
         if (!this.connectionModal) return;
         const state = store.getState();
+        const appAuth = state.appAuth || { required: true, authenticated: false };
 
         // 1. If App Master Authentication is required and not yet authenticated
-        if (state.appAuth.required && !state.appAuth.authenticated) {
+        if (appAuth.required && !appAuth.authenticated) {
             this.connectionModal.innerHTML = `
                 <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden p-8 space-y-6 text-slate-800 dark:text-slate-100">
                     <div class="flex items-center justify-between">
@@ -282,7 +283,7 @@ class App {
                         <button type="button" id="login-theme-btn" title="สลับโหมดสว่าง/มืด" class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition">
                             <i class="fa-solid ${store.getState().theme === 'dark' ? 'fa-moon text-indigo-400' : 'fa-sun text-amber-500'} text-sm"></i>
                         </button>
-                        ${state.appAuth.required ? `
+                        ${appAuth.required ? `
                             <button type="button" id="app-logout-btn" title="ล็อกระบบ / ออกจากระบบ" class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-600 hover:text-white border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center transition">
                                 <i class="fa-solid fa-lock text-sm"></i>
                             </button>
