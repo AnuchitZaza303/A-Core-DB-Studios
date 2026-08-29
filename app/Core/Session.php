@@ -9,22 +9,24 @@ class Session
     {
         if (!self::$started && session_status() === PHP_SESSION_NONE) {
             $config = require __DIR__ . '/../../config/app.php';
-            
-            ini_set('session.cookie_httponly', '1');
-            ini_set('session.use_only_cookies', '1');
-            ini_set('session.cookie_samesite', 'Lax');
-            ini_set('session.cookie_path', '/');
-            ini_set('session.gc_maxlifetime', (string)$config['session_lifetime']);
 
+            // Detect HTTPS (including Cloudflare, Proxies, Load Balancers)
             $isHttps = (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] === 'on' || $_SERVER['HTTPS'] === 1)) 
                 || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
                 || (isset($_SERVER['HTTP_CF_VISITOR']) && str_contains($_SERVER['HTTP_CF_VISITOR'], 'https'))
+                || (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on')
                 || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
-            if ($isHttps) {
-                ini_set('session.cookie_secure', '1');
-            }
-            
-            session_name($config['session_name']);
+
+            session_set_cookie_params([
+                'lifetime' => (int)($config['session_lifetime'] ?? 86400 * 7),
+                'path' => '/',
+                'domain' => '',
+                'secure' => $isHttps,
+                'httponly' => true,
+                'samesite' => $isHttps ? 'None' : 'Lax',
+            ]);
+
+            session_name($config['session_name'] ?? 'acore_db_studio_session');
             session_start();
             self::$started = true;
         }

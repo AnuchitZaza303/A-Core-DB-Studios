@@ -50,11 +50,19 @@ class Router
         $requestMethod = $request->getMethod();
         $requestUri = $request->getUri();
 
-        // Handle CORS Preflight if any
-        if ($requestMethod === 'OPTIONS') {
-            header('Access-Control-Allow-Origin: *');
+        // Handle CORS Preflight & Credentials
+        $origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
+        if (!headers_sent()) {
+            if ($origin !== '*') {
+                header("Access-Control-Allow-Origin: {$origin}");
+                header('Access-Control-Allow-Credentials: true');
+            } else {
+                header('Access-Control-Allow-Origin: *');
+            }
             header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
             header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+        }
+        if ($requestMethod === 'OPTIONS') {
             exit;
         }
 
