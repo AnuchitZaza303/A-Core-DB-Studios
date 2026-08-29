@@ -98,7 +98,7 @@ export const DataGrid = {
         const totalPages = pagination.total_pages;
 
         this.container.innerHTML = `
-            <div class="flex flex-col h-full space-y-3">
+            <div class="flex flex-col flex-1 h-full min-h-0 space-y-3">
                 
                 <!-- Toolbar: Search, Filters, Actions & Insert Row -->
                 <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900/80 p-3 rounded-2xl border border-slate-800 flex-shrink-0">
@@ -145,7 +145,7 @@ export const DataGrid = {
                 </div>
 
                 <!-- Table Data View Container -->
-                <div class="flex-1 bg-slate-900/60 rounded-2xl border border-slate-800 overflow-hidden relative data-table-container">
+                <div class="flex-1 min-h-0 bg-slate-900/60 rounded-2xl border border-slate-800 relative data-table-container">
                     ${rows.length === 0 ? `
                         <div class="flex flex-col items-center justify-center h-full text-slate-500 text-xs space-y-2 p-8">
                             <i class="fa-solid fa-inbox text-3xl text-slate-600"></i>

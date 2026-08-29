@@ -69,7 +69,7 @@
     ?>
     <link rel="stylesheet" href="<?= $assetPrefix ?>/assets/css/app.css">
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen overflow-hidden select-none">
+<body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen overflow-hidden">
 
     <!-- Loading Bar Indicator -->
     <div id="global-loading-bar" class="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 z-50 transform -translate-y-full transition-transform duration-300"></div>
@@ -83,22 +83,22 @@
         </header>
 
         <!-- Main Body (Sidebar + Content Workspace) -->
-        <div class="flex flex-1 overflow-hidden">
+        <div class="flex flex-1 overflow-hidden min-h-0">
             
             <!-- Left Navigation Sidebar -->
-            <aside id="app-sidebar" class="w-72 bg-slate-950/70 backdrop-blur border-r border-slate-800/80 flex flex-col flex-shrink-0 transition-all duration-300">
+            <aside id="app-sidebar" class="w-72 bg-slate-950/70 backdrop-blur border-r border-slate-800/80 flex flex-col flex-shrink-0 transition-all duration-300 min-h-0">
                 <!-- Sidebar will be rendered dynamically by Sidebar.js -->
             </aside>
 
             <!-- Main Content Area -->
-            <main id="app-main" class="flex-1 flex flex-col bg-slate-900/50 overflow-hidden relative">
+            <main id="app-main" class="flex-1 flex flex-col bg-slate-900/50 overflow-hidden relative min-w-0 min-h-0">
                 <!-- Nav Tabs for Active Table/View -->
                 <div id="view-tabs-container" class="h-10 bg-slate-900 border-b border-slate-800 flex items-center px-4 space-x-1 flex-shrink-0">
                     <!-- Tabs rendered dynamically -->
                 </div>
 
                 <!-- Tab Panels Area -->
-                <div id="tab-content-area" class="flex-1 overflow-auto p-4 relative">
+                <div id="tab-content-area" class="flex-1 overflow-y-auto overflow-x-hidden p-4 relative min-h-0 flex flex-col">
                     <!-- Dynamic views: DataGrid, SchemaViewer, SqlEditor, ExportImport, ServerMonitor -->
                 </div>
             </main>
