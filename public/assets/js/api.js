@@ -25,7 +25,9 @@ class ApiClient {
     }
 
     async request(endpoint, options = {}) {
-        this.startLoading();
+        if (!options.silent) {
+            this.startLoading();
+        }
         const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
 
         const headers = {
@@ -59,11 +61,13 @@ class ApiClient {
             console.error('[API Error]:', error);
             throw error;
         } finally {
-            this.stopLoading();
+            if (!options.silent) {
+                this.stopLoading();
+            }
         }
     }
 
-    get(endpoint, params = {}) {
+    get(endpoint, params = {}, options = {}) {
         const searchParams = new URLSearchParams();
         Object.entries(params).forEach(([key, val]) => {
             if (val !== null && val !== undefined && val !== '') {
@@ -72,13 +76,14 @@ class ApiClient {
         });
         const qs = searchParams.toString();
         const url = qs ? `${endpoint}?${qs}` : endpoint;
-        return this.request(url, { method: 'GET' });
+        return this.request(url, { method: 'GET', ...options });
     }
 
-    post(endpoint, body = {}) {
+    post(endpoint, body = {}, options = {}) {
         return this.request(endpoint, {
             method: 'POST',
-            body
+            body,
+            ...options
         });
     }
 

@@ -80,11 +80,16 @@ export const ServerMonitor = {
     },
 
     async pollData() {
+        if (!this.container || !document.contains(this.container) || store.getState().activeTab !== 'server') {
+            this.stopTimer();
+            return;
+        }
+
         this.isPolling = true;
         try {
             const [statusRes, procRes] = await Promise.all([
-                api.get('/server/status'),
-                api.get('/server/processes'),
+                api.get('/server/status', {}, { silent: true }),
+                api.get('/server/processes', {}, { silent: true }),
             ]);
 
             this.statusData = statusRes.data;
