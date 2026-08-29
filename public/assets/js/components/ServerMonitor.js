@@ -478,31 +478,31 @@ export const ServerMonitor = {
                 stateHtml = `<span class="px-2 py-0.5 rounded text-[10px] bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 font-medium border border-cyan-500/20"><i class="fa-solid fa-arrows-spin fa-spin text-[9px] mr-1"></i> ${Formatter.escapeHtml(p.State)}</span>`;
             }
 
-            // Duration & Progress Load Bar Logic
+            // Duration & Progress Load Bar Logic (แสดงเวลาที่ใช้ประมวลผล Query จริง)
             let durationHtml = '';
             if (p.User === 'system user' || p.Time === null || p.Time === undefined) {
                 durationHtml = `
-                    <div class="text-[11px] text-slate-500 dark:text-slate-400 font-sans flex items-center gap-1">
-                        <i class="fa-solid fa-gears text-[10px] opacity-60"></i>
-                        <span>เบื้องหลังระบบ</span>
+                    <div class="text-[11px] text-slate-400 font-sans flex items-center gap-1.5">
+                        <i class="fa-solid fa-gears text-[10px] text-indigo-400"></i>
+                        <span>งานระบบ (0s)</span>
                     </div>
                 `;
             } else if (p.Command === 'Sleep') {
-                const sleepPct = Math.min(100, Math.max(5, Math.round((time / 300) * 100)));
+                // สำหรับ Connection ที่ Sleep คือไม่ได้รัน Query (เวลาประมวลผล = 0s)
                 durationHtml = `
                     <div class="space-y-1 w-28">
                         <div class="flex items-center justify-between text-[11px]">
-                            <span class="font-mono text-slate-500 dark:text-slate-400">${timeStr}</span>
-                            <span class="text-[9px] text-slate-500 font-sans bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.2 rounded">Idle (พัก)</span>
+                            <span class="font-mono text-slate-400 font-medium">0s</span>
+                            <span class="text-[9px] text-slate-400 font-sans bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.2 rounded" title="พักรอคำสั่งมาแล้ว ${timeStr}">พักรอ (Idle)</span>
                         </div>
                         <div class="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-                            <div class="h-full rounded-full bg-slate-400/50 dark:bg-slate-600 transition-all duration-300" style="width: ${sleepPct}%"></div>
+                            <div class="h-full rounded-full bg-slate-400/30 dark:bg-slate-700" style="width: 0%"></div>
                         </div>
                     </div>
                 `;
             } else {
-                // Active Running Query or other commands
-                const timePct = Math.min(100, Math.max(5, Math.round((time / 60) * 100)));
+                // คำสั่ง SQL ที่กำลังประมวลผลอยู่จริง (Active Execution Time)
+                const timePct = Math.min(100, Math.max(8, Math.round((time / 30) * 100)));
                 let timeBarColor = 'bg-emerald-500';
                 let timeLabel = 'Active';
                 let timeTextClass = 'text-emerald-600 dark:text-emerald-400 font-bold';
