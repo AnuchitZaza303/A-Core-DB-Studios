@@ -1,5 +1,5 @@
 /**
- * ServerMonitor Component (Real-Time Process List, Variables, Live Resource Usage Bars)
+ * ServerMonitor Component (Real-Time Process List, Variables, Live Resource Usage Bars, Auto-Hide Completed)
  */
 import { api } from '../api.js';
 import { Toast } from '../utils/toast.js';
@@ -17,6 +17,8 @@ export const ServerMonitor = {
     autoRefresh: true,
     refreshInterval: 1000, // 1000 ms (1 second)
     isPolling: false,
+    hideCompleted: true, // Auto-hide completed/idle processes (>5s)
+    autoHideThreshold: 5, // 5 seconds threshold
 
     init(targetContainer) {
         this.container = targetContainer;
@@ -42,6 +44,21 @@ export const ServerMonitor = {
             clearInterval(this.timer);
             this.timer = null;
         }
+    },
+
+    getVisibleProcesses() {
+        if (!this.hideCompleted) {
+            return this.processes;
+        }
+        return this.processes.filter(p => {
+            // Always show background system daemon threads
+            if (p.User === 'system user') return true;
+            // Always show active executing queries
+            if (p.Command !== 'Sleep') return true;
+            // For Sleep / Completed connections, only keep on screen for < 5 seconds then auto-hide
+            const time = p.Time !== null && p.Time !== undefined ? Number(p.Time) : 0;
+            return time < this.autoHideThreshold;
+        });
     },
 
     async loadData() {
@@ -160,9 +177,18 @@ export const ServerMonitor = {
         const gCacheBar = document.getElementById('gauge-cache-bar');
         if (gCacheBar) gCacheBar.style.width = `${Math.min(100, Math.max(2, tableCachePct))}%`;
 
-        // Process List Count
+        // Process List Count & Hidden Count
+        const visibleProcs = this.getVisibleProcesses();
+        const hiddenCount = this.processes.length - visibleProcs.length;
+
         const procCountBadge = document.getElementById('srv-proc-count');
-        if (procCountBadge) procCountBadge.textContent = this.processes.length;
+        if (procCountBadge) procCountBadge.textContent = visibleProcs.length;
+
+        const hiddenCountEl = document.getElementById('srv-hidden-count');
+        if (hiddenCountEl) {
+            hiddenCountEl.textContent = hiddenCount > 0 ? `ซ่อน ${hiddenCount}` : '';
+            hiddenCountEl.classList.toggle('hidden', hiddenCount === 0);
+        }
 
         // Process List Table Rows (if on processes tab)
         if (this.activeTab === 'processes') {
@@ -209,6 +235,9 @@ export const ServerMonitor = {
         const openTables = s.open_tables || 0;
         const tableCache = s.table_open_cache || 400;
         const tableCachePct = s.table_cache_percent || 0;
+
+        const visibleProcs = this.getVisibleProcesses();
+        const hiddenCount = this.processes.length - visibleProcs.length;
 
         this.container.innerHTML = `
             <div class="max-w-6xl mx-auto space-y-6 pb-12">
@@ -352,7 +381,7 @@ export const ServerMonitor = {
                     <div class="flex space-x-2 text-xs">
                         <button id="srvtab-proc" class="px-4 py-2 rounded-xl font-medium transition flex items-center gap-2 ${this.activeTab === 'processes' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white bg-slate-900/60'}">
                             <i class="fa-solid fa-list-check"></i>
-                            <span>Process List (<span id="srv-proc-count">${this.processes.length}</span>)</span>
+                            <span>Process List (<span id="srv-proc-count">${visibleProcs.length}</span>)</span>
                         </button>
                         <button id="srvtab-vars" class="px-4 py-2 rounded-xl font-medium transition flex items-center gap-2 ${this.activeTab === 'variables' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white bg-slate-900/60'}">
                             <i class="fa-solid fa-gears"></i>
@@ -360,9 +389,16 @@ export const ServerMonitor = {
                         </button>
                     </div>
 
-                    <!-- Right Controls: Live Badge, Auto Refresh Interval, Manual Refresh -->
-                    <div class="flex items-center gap-2.5">
+                    <!-- Right Controls: Auto-hide Completed, Live Badge, Auto Refresh Interval, Manual Refresh -->
+                    <div class="flex flex-wrap items-center gap-2.5">
                         
+                        <!-- Auto-hide completed toggle -->
+                        <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer bg-slate-900/80 px-2.5 py-1 rounded-xl border border-slate-800 hover:bg-slate-800 transition select-none" title="ซ่อน Process ที่ทำงานเสร็จและพักรอเกิน 5 วินาที เพื่อไม่ให้รกหน้าจอ">
+                            <input type="checkbox" id="srv-hide-completed-cb" ${this.hideCompleted ? 'checked' : ''} class="w-3.5 h-3.5 accent-indigo-600 rounded cursor-pointer">
+                            <span class="font-medium text-slate-200">ซ่อนงานเสร็จ (>5วิ)</span>
+                            <span id="srv-hidden-count" class="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.2 rounded-full font-mono ${hiddenCount > 0 ? '' : 'hidden'}">ซ่อน ${hiddenCount}</span>
+                        </label>
+
                         <!-- Live Indicator Badge & Interval Selector -->
                         <div class="flex items-center bg-slate-900/80 border border-slate-800 rounded-xl px-2.5 py-1 text-xs gap-2 shadow-xs">
                             <span class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
@@ -422,22 +458,14 @@ export const ServerMonitor = {
     },
 
     renderProcessRows() {
-        if (this.processes.length === 0) {
-            return `<tr><td colspan="8" class="p-6 text-center text-slate-500 font-sans">ไม่มี Process ที่กำลังทำงาน</td></tr>`;
+        const visible = this.getVisibleProcesses();
+        if (visible.length === 0) {
+            return `<tr><td colspan="8" class="p-6 text-center text-slate-500 font-sans">ไม่มี Process ที่กำลังทำงาน (งานที่เสร็จแล้วถูกซ่อนไว้)</td></tr>`;
         }
 
-        return this.processes.map(p => {
+        return visible.map(p => {
             const time = p.Time !== null && p.Time !== undefined ? Number(p.Time) : 0;
             const timeStr = p.Time !== null && p.Time !== undefined ? `${time}s` : '-';
-            
-            // Calculate duration progress bar percentage (scale of 0-60s or log for visual)
-            const timePct = Math.min(100, Math.max(3, Math.round((time / 60) * 100)));
-            let timeBarColor = 'bg-emerald-500';
-            if (time > 30) {
-                timeBarColor = 'bg-rose-500 animate-pulse';
-            } else if (time > 5) {
-                timeBarColor = 'bg-amber-500';
-            }
 
             // Command / Activity Badge
             let commandBadge = '';
@@ -615,6 +643,16 @@ export const ServerMonitor = {
             await this.pollData();
             Toast.success('อัปเดตสถานะเซิร์ฟเวอร์เรียบร้อย');
         });
+
+        // Auto-hide completed toggle
+        const hideCompletedCb = document.getElementById('srv-hide-completed-cb');
+        if (hideCompletedCb) {
+            hideCompletedCb.onchange = (e) => {
+                this.hideCompleted = e.target.checked;
+                this.render();
+                Toast.info(this.hideCompleted ? 'ซ่อน Process ที่ทำงานเสร็จแล้ว (>5วิ) เรียบร้อย' : 'แสดง Process ทั้งหมด (รวม Sleep)');
+            };
+        }
 
         // Interval selector change
         const intervalSelect = document.getElementById('srv-interval-select');
