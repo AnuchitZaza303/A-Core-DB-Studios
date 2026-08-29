@@ -63,8 +63,15 @@ class App {
             this.renderTabs();
             this.renderActiveView();
             this.updateFooter();
-        } else if (['auth:disconnected', 'appAuth:updated', 'appAuth:logout', 'appAuth:login'].includes(event)) {
+        } else if (event === 'auth:disconnected' || event === 'appAuth:logout') {
             this.showConnectionModal();
+            this.updateFooter();
+        } else if (event === 'appAuth:updated' || event === 'appAuth:login') {
+            if (!state.auth.connected) {
+                this.showConnectionModal();
+            } else {
+                this.hideConnectionModal();
+            }
             this.updateFooter();
         } else if (['table:selected', 'database:selected', 'tab:changed', 'databases:updated', 'tables:updated'].includes(event)) {
             this.renderTabs();
@@ -439,7 +446,25 @@ class App {
                 });
 
                 Toast.success(res.message || 'เชื่อมต่อสำเร็จ');
-                await store.checkAuthStatus();
+                this.hideConnectionModal();
+
+                if (res.data?.connected) {
+                    store.setState({
+                        auth: {
+                            connected: true,
+                            user: res.data.user || user,
+                            host: res.data.host || host,
+                            port: res.data.port || port,
+                            server_version: res.data.server_version || '',
+                        },
+                        activeDatabase: res.data.active_database || null,
+                    }, 'auth:connected');
+                }
+
+                await store.refreshDatabases();
+                if (store.getState().activeDatabase) {
+                    await store.refreshTables();
+                }
             } catch (err) {
                 Toast.error(err.message || 'เชื่อมต่อล้มเหลว: ' + err.message);
                 btn.disabled = false;
