@@ -67,7 +67,13 @@
         $baseUri = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
         $assetPrefix = (str_ends_with($baseUri, 'public') || str_ends_with($baseUri, 'public/')) ? $baseUri : $baseUri . '/public';
         $assetPrefix = rtrim($assetPrefix, '/');
-        $assetVer = '1.0.3_' . filemtime(__FILE__);
+        
+        $apiPrefix = rtrim($baseUri, '/');
+        if (str_ends_with($apiPrefix, '/public')) {
+            $apiPrefix = substr($apiPrefix, 0, -7);
+        }
+        $apiPrefix = ($apiPrefix === '' ? '' : $apiPrefix) . '/api';
+        $assetVer = '1.0.4_' . time();
     ?>
     <link rel="stylesheet" href="<?= $assetPrefix ?>/assets/css/app.css?v=<?= $assetVer ?>">
 </head>
@@ -141,7 +147,7 @@
     <script>
         window.APP_CONFIG = {
             baseUri: "<?= $assetPrefix ?>",
-            apiPrefix: "<?= $assetPrefix ?>/api"
+            apiPrefix: "<?= $apiPrefix ?>"
         };
     </script>
     <script type="module" src="<?= $assetPrefix ?>/assets/js/app.js?v=<?= $assetVer ?>"></script>

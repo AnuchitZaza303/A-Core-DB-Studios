@@ -58,18 +58,20 @@ class Router
             exit;
         }
 
-        // Normalize URI by removing base script directories if accessed via subfolder like /A-Core or /A-Core/public
-        $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
-        $scriptDir = dirname($scriptName);
-        if ($scriptDir !== '/' && $scriptDir !== '\\' && str_starts_with($requestUri, $scriptDir)) {
-            $requestUri = substr($requestUri, strlen($scriptDir));
-        }
-
-        // Also handle /A-Core or /A-Core/public prefix if rewrite happens
-        $requestUri = preg_replace('#^/(A-Core|a-core)(/public)?#', '', $requestUri);
-        $requestUri = '/' . ltrim($requestUri, '/');
-        if ($requestUri === '') {
-            $requestUri = '/';
+        // Normalize API endpoints: Any request targeting /api/... cleanly maps to /api/...
+        if (preg_match('#(/api(?:/.*)?)$#', $requestUri, $apiMatch)) {
+            $requestUri = $apiMatch[1];
+        } else {
+            $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+            $scriptDir = dirname($scriptName);
+            if ($scriptDir !== '/' && $scriptDir !== '\\' && str_starts_with($requestUri, $scriptDir)) {
+                $requestUri = substr($requestUri, strlen($scriptDir));
+            }
+            $requestUri = preg_replace('#^/(A-Core|a-core)(/public)?#i', '', $requestUri);
+            $requestUri = '/' . ltrim($requestUri, '/');
+            if ($requestUri === '') {
+                $requestUri = '/';
+            }
         }
 
         foreach ($this->routes as $route) {

@@ -8,8 +8,8 @@ class Store {
     constructor() {
         this.state = {
             appAuth: {
-                required: false,
-                authenticated: true,
+                required: true,
+                authenticated: false,
                 username: null,
             },
             auth: {
@@ -56,14 +56,14 @@ class Store {
             if (res.data) {
                 this.setState({
                     appAuth: {
-                        required: res.data.auth_required,
-                        authenticated: res.data.authenticated,
-                        username: res.data.username,
+                        required: !!res.data.auth_required,
+                        authenticated: !!res.data.authenticated,
+                        username: res.data.username || null,
                     }
                 }, 'appAuth:updated');
-                return res.data.authenticated;
+                return !!res.data.authenticated;
             }
-            return true;
+            return false;
         } catch (e) {
             return false;
         }
