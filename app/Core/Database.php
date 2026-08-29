@@ -36,6 +36,19 @@ class Database
             self::$currentDatabase = $database;
             return $pdo;
         } catch (PDOException $e) {
+            // Smart Loopback Fallback (127.0.0.1 <-> localhost)
+            $altHost = ($host === '127.0.0.1') ? 'localhost' : (($host === 'localhost') ? '127.0.0.1' : null);
+            if ($altHost !== null) {
+                try {
+                    $altDsn = "mysql:host={$altHost};port={$port};charset={$charset}" . ($database ? ";dbname={$database}" : "");
+                    $pdo = new PDO($altDsn, $user, $password, $options);
+                    self::$pdo = $pdo;
+                    self::$currentDatabase = $database;
+                    return $pdo;
+                } catch (PDOException $altEx) {
+                    // Ignore and throw original error
+                }
+            }
             throw new Exception("ไม่สามารถเชื่อมต่อฐานข้อมูลได้: " . $e->getMessage(), (int)$e->getCode());
         }
     }
