@@ -62,14 +62,14 @@
         })();
     </script>
     
-    <!-- Custom Stylesheet -->
     <?php
         // Resolve assets base path relative to current URL
         $baseUri = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
         $assetPrefix = (str_ends_with($baseUri, 'public') || str_ends_with($baseUri, 'public/')) ? $baseUri : $baseUri . '/public';
         $assetPrefix = rtrim($assetPrefix, '/');
+        $assetVer = '1.0.3_' . filemtime(__FILE__);
     ?>
-    <link rel="stylesheet" href="<?= $assetPrefix ?>/assets/css/app.css">
+    <link rel="stylesheet" href="<?= $assetPrefix ?>/assets/css/app.css?v=<?= $assetVer ?>">
 </head>
 <body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen overflow-hidden">
 
@@ -144,6 +144,6 @@
             apiPrefix: "<?= $assetPrefix ?>/api"
         };
     </script>
-    <script type="module" src="<?= $assetPrefix ?>/assets/js/app.js"></script>
+    <script type="module" src="<?= $assetPrefix ?>/assets/js/app.js?v=<?= $assetVer ?>"></script>
 </body>
 </html>

@@ -57,7 +57,7 @@ class App {
             this.renderTabs();
             this.renderActiveView();
             this.updateFooter();
-        } else if (event === 'auth:disconnected') {
+        } else if (['auth:disconnected', 'appAuth:updated', 'appAuth:logout', 'appAuth:login'].includes(event)) {
             this.showConnectionModal();
             this.updateFooter();
         } else if (['table:selected', 'database:selected', 'tab:changed'].includes(event)) {
@@ -103,7 +103,7 @@ class App {
             </div>
         `;
 
-        this.tabsContainer.querySelectorAll('.nav-tab-btn:not([disabled])').forEach(btn => {
+        this.tabsContainer.querySelectorAll('.nav-tab-btn').forEach(btn => {
             btn.onclick = () => {
                 const tabId = btn.getAttribute('data-tab');
                 store.setActiveTab(tabId);
@@ -116,14 +116,7 @@ class App {
         const state = store.getState();
 
         if (!state.auth.connected) {
-            this.contentArea.innerHTML = `
-                <div class="flex flex-col items-center justify-center h-full text-slate-500 space-y-3">
-                    <div class="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-600 text-3xl">
-                        <i class="fa-solid fa-lock"></i>
-                    </div>
-                    <p class="text-sm">กรุณาเข้าสู่ระบบ / เชื่อมต่อฐานข้อมูล</p>
-                </div>
-            `;
+            this.contentArea.innerHTML = '';
             return;
         }
 
@@ -182,38 +175,38 @@ class App {
         // 1. If App Master Authentication is required and not yet authenticated
         if (state.appAuth.required && !state.appAuth.authenticated) {
             this.connectionModal.innerHTML = `
-                <div class="bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden p-8 space-y-6">
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden p-8 space-y-6 text-slate-800 dark:text-slate-100">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl shadow-lg shadow-indigo-500/25">
                                 <i class="fa-solid fa-shield-halved"></i>
                             </div>
                             <div>
-                                <h2 class="text-lg font-bold text-slate-100 leading-tight">A-Core Security Gate</h2>
-                                <p class="text-xs text-slate-400">กรุณายืนยันตัวตนเพื่อเข้าใช้งานระบบ</p>
+                                <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100 leading-tight">A-Core Security Gate</h2>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">กรุณายืนยันตัวตนเพื่อเข้าใช้งานระบบ</p>
                             </div>
                         </div>
-                        <button type="button" id="login-theme-btn" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 flex items-center justify-center transition">
-                            <i class="fa-solid ${state.theme === 'dark' ? 'fa-moon text-indigo-400' : 'fa-sun text-amber-400'} text-xs"></i>
+                        <button type="button" id="login-theme-btn" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition">
+                            <i class="fa-solid ${state.theme === 'dark' ? 'fa-moon text-indigo-400' : 'fa-sun text-amber-500'} text-xs"></i>
                         </button>
                     </div>
 
                     <form id="app-login-form" class="space-y-4 text-xs">
                         <div>
-                            <label class="block font-semibold text-slate-300 mb-1">Username (ชื่อผู้ใช้ระบบ) *</label>
+                            <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Username (ชื่อผู้ใช้ระบบ) *</label>
                             <div class="relative">
                                 <input type="text" id="app-login-user" value="" placeholder="admin" required
-                                    class="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
-                                <i class="fa-solid fa-user text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 text-xs pointer-events-none"></i>
+                                    class="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono">
+                                <i class="fa-solid fa-user text-slate-400 dark:text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 text-xs pointer-events-none"></i>
                             </div>
                         </div>
 
                         <div>
-                            <label class="block font-semibold text-slate-300 mb-1">Password (รหัสผ่านระบบ) *</label>
+                            <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Password (รหัสผ่านระบบ) *</label>
                             <div class="relative">
                                 <input type="password" id="app-login-pass" value="" placeholder="••••••••" required
-                                    class="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500">
-                                <i class="fa-solid fa-lock text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 text-xs pointer-events-none"></i>
+                                    class="w-full pl-9 pr-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono">
+                                <i class="fa-solid fa-lock text-slate-400 dark:text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 text-xs pointer-events-none"></i>
                             </div>
                         </div>
 
@@ -223,7 +216,7 @@ class App {
                         </button>
                     </form>
 
-                    <div class="text-[11px] text-slate-500 text-center">
+                    <div class="text-[11px] text-slate-400 dark:text-slate-500 text-center">
                         <i class="fa-solid fa-lock text-[10px] mr-1"></i> ระบบล็อกความปลอดภัย A-Core DB Studio
                     </div>
                 </div>
@@ -263,34 +256,34 @@ class App {
         // 2. Database Connection Portal
         let profiles = [];
         try {
-            const res = await api.get('/auth/profiles');
+            const res = await api.get('/auth/profiles', {}, { silent: true });
             profiles = res.data || [];
         } catch {
             profiles = [];
         }
 
         this.connectionModal.innerHTML = `
-            <div class="bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden p-8 space-y-6">
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden p-8 space-y-6 text-slate-800 dark:text-slate-100">
                 
                 <!-- Modal Branding Header -->
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3.5">
                         <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 flex items-center justify-center text-white text-2xl shadow-xl shadow-indigo-500/25">
-                            <i class="fa-solid fa-layer-group"></i>
+                            <i class="fa-solid fa-database"></i>
                         </div>
                         <div>
-                            <h2 class="text-xl font-bold bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">
+                            <h2 class="text-xl font-bold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
                                 A-Core DB Studio
                             </h2>
-                            <p class="text-xs text-slate-400">เชื่อมต่อฐานข้อมูล MySQL / MariaDB</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">เชื่อมต่อฐานข้อมูล MySQL / MariaDB</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button type="button" id="login-theme-btn" title="สลับโหมดสว่าง/มืด" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition">
-                            <i class="fa-solid ${store.getState().theme === 'dark' ? 'fa-moon text-indigo-400' : 'fa-sun text-amber-400'} text-sm"></i>
+                        <button type="button" id="login-theme-btn" title="สลับโหมดสว่าง/มืด" class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition">
+                            <i class="fa-solid ${store.getState().theme === 'dark' ? 'fa-moon text-indigo-400' : 'fa-sun text-amber-500'} text-sm"></i>
                         </button>
                         ${state.appAuth.required ? `
-                            <button type="button" id="app-logout-btn" title="ล็อกระบบ / ออกจากระบบ" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-rose-600 border border-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+                            <button type="button" id="app-logout-btn" title="ล็อกระบบ / ออกจากระบบ" class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-600 hover:text-white border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center transition">
                                 <i class="fa-solid fa-lock text-sm"></i>
                             </button>
                         ` : ''}
@@ -300,16 +293,16 @@ class App {
                 <!-- Quick Profiles Selector -->
                 ${profiles.length > 0 ? `
                     <div class="space-y-1.5">
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">โปรไฟล์การเชื่อมต่อด่วน (Saved Profiles)</label>
+                        <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">โปรไฟล์การเชื่อมต่อด่วน (Saved Profiles)</label>
                         <div class="flex flex-wrap gap-2">
                             ${profiles.map((p, idx) => `
-                                <button type="button" class="btn-profile-preset px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs text-slate-300 hover:text-white transition flex items-center gap-1.5"
+                                <button type="button" class="btn-profile-preset px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-300 transition flex items-center gap-1.5"
                                     data-host="${Formatter.escapeHtml(p.host)}"
                                     data-port="${Formatter.escapeHtml(p.port)}"
                                     data-user="${Formatter.escapeHtml(p.user)}"
                                     data-password="${Formatter.escapeHtml(p.password)}"
                                     data-db="${Formatter.escapeHtml(p.database || '')}">
-                                    <i class="fa-solid fa-server text-indigo-400 text-[10px]"></i>
+                                    <i class="fa-solid fa-server text-indigo-500 text-[10px]"></i>
                                     <span>${Formatter.escapeHtml(p.name)}</span>
                                 </button>
                             `).join('')}
@@ -321,39 +314,39 @@ class App {
                 <form id="connect-form" class="space-y-4 text-xs">
                     <div class="grid grid-cols-3 gap-3">
                         <div class="col-span-2">
-                            <label class="block font-semibold text-slate-300 mb-1">Host / Server IP *</label>
+                            <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Host / Server IP *</label>
                             <input type="text" id="conn-host" value="127.0.0.1" placeholder="127.0.0.1 หรือ localhost" required
-                                class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono">
+                                class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono">
                         </div>
                         <div>
-                            <label class="block font-semibold text-slate-300 mb-1">Port *</label>
+                            <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Port *</label>
                             <input type="number" id="conn-port" value="3306" placeholder="3306" required
-                                class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono">
+                                class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono">
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block font-semibold text-slate-300 mb-1">Username *</label>
+                            <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Username *</label>
                             <input type="text" id="conn-user" value="root" placeholder="root" required
-                                class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono">
+                                class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono">
                         </div>
                         <div>
-                            <label class="block font-semibold text-slate-300 mb-1">Password</label>
+                            <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Password</label>
                             <input type="password" id="conn-password" value="" placeholder="รหัสผ่าน MySQL"
-                                class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono">
+                                class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block font-semibold text-slate-300 mb-1">Default Database (ไม่จำเป็น)</label>
+                        <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Default Database (ไม่จำเป็น)</label>
                         <input type="text" id="conn-database" value="" placeholder="ระบุชื่อฐานข้อมูลที่ต้องการเปิดทันที"
-                            class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono">
+                            class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono">
                     </div>
 
                     <div class="flex items-center justify-between pt-2">
-                        <label class="flex items-center gap-2 cursor-pointer text-slate-400 hover:text-slate-200 transition">
-                            <input type="checkbox" id="conn-save-profile" class="rounded bg-slate-800 border-slate-700 text-indigo-600 focus:ring-0">
+                        <label class="flex items-center gap-2 cursor-pointer text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition">
+                            <input type="checkbox" id="conn-save-profile" class="rounded bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-0">
                             <span>บันทึกเป็นโปรไฟล์สำหรับการใช้งานครั้งถัดไป</span>
                         </label>
                     </div>

@@ -15,7 +15,7 @@ return [
     // Application Master Security Gate (ระบบล็อกหน้าเว็บด้วยรหัสผ่านก่อนเข้าใช้งาน)
     'auth_required' => true,
     'admin_username' => 'admin',
-    'admin_password' => 'admin1234', // สามารถเปลี่ยนเป็นรหัสผ่านที่คุณต้องการได้เลย
+    'admin_password' => 'gr@eqVG66H&', // สามารถเปลี่ยนเป็นรหัสผ่านที่คุณต้องการได้เลย
 
     'default_host' => '127.0.0.1',
     'default_port' => 3306,

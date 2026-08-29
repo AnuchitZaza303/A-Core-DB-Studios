@@ -105,7 +105,14 @@ class Store {
     async checkAuthStatus() {
         const isAppAuthed = await this.checkAppAuth();
         if (!isAppAuthed) {
-            return;
+            this.setState({
+                auth: { connected: false },
+                activeDatabase: null,
+                activeTable: null,
+                databases: [],
+                tables: [],
+            }, 'auth:disconnected');
+            return false;
         }
 
         try {
@@ -126,6 +133,7 @@ class Store {
                 if (this.state.activeDatabase) {
                     await this.refreshTables();
                 }
+                return true;
             } else {
                 this.setState({
                     auth: { connected: false },
@@ -134,11 +142,13 @@ class Store {
                     databases: [],
                     tables: [],
                 }, 'auth:disconnected');
+                return false;
             }
         } catch (e) {
             this.setState({
                 auth: { connected: false }
             }, 'auth:disconnected');
+            return false;
         }
     }
 
