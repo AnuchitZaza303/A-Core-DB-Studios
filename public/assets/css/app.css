@@ -10,7 +10,7 @@
         transition: background-color 0.2s ease, color 0.2s ease;
     }
 
-    code, pre, .font-mono, .code-font {
+    .font-mono, .code-font {
         font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
     }
 }
@@ -35,7 +35,7 @@ html.light {
 }
 
 html.light body {
-    background-color: #f1f5f9; /* Soft slate-100, not glaring pure white */
+    background-color: #f4f6f8; /* Soft subtle warm slate, comfortable for long work */
     color: #1e293b;            /* Deep slate-800 text for crisp readability */
 }
 
@@ -43,7 +43,7 @@ html.light body {
 html.light #app-header {
     background-color: #ffffff;
     border-color: #e2e8f0;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
 }
 
 html.light #app-sidebar {
@@ -52,7 +52,7 @@ html.light #app-sidebar {
 }
 
 html.light #app-main {
-    background-color: #f8fafc;
+    background-color: #f4f6f8;
 }
 
 html.light #app-footer {
@@ -160,149 +160,92 @@ html.light #connection-modal > div {
 }
 
 html.light .bg-slate-900\/60 {
-    background-color: #f8fafc !important;
-}
-
-/* Light Mode Data Tables */
-html.light .data-table thead th {
-    background-color: #f8fafc;
-    border-bottom: 2px solid #e2e8f0;
-    color: #475569;
-    font-weight: 600;
-}
-
-html.light .data-table tbody tr {
-    background-color: #ffffff;
-}
-
-html.light .data-table tbody tr:hover {
-    background-color: #f8fafc;
-}
-
-html.light .data-table tbody tr.selected-row {
-    background-color: #eef2ff !important;
-}
-
-html.light .data-table td {
-    border-bottom: 1px solid #f1f5f9;
-    color: #1e293b;
-}
-
-html.light .cell-editing {
-    outline: 2px solid #4f46e5 !important;
-    background: #ffffff !important;
-}
-
-html.light .cell-input {
-    background: #ffffff !important;
-    color: #0f172a !important;
-}
-
-/* Light Mode Badges & Soft Accents */
-html.light .badge-null {
-    color: #64748b;
-    background: #f1f5f9;
-    border: 1px dashed #cbd5e1;
-}
-
-html.light #view-tabs-container .nav-tab-btn {
-    color: #64748b;
-}
-
-html.light #view-tabs-container .nav-tab-btn:hover {
-    color: #0f172a;
-    background-color: #f8fafc;
-}
-
-html.light #view-tabs-container .nav-tab-btn.bg-slate-900\/90 {
-    background-color: #f1f5f9 !important;
-    color: #4f46e5 !important;
-    border-color: #4f46e5 !important;
-}
-
-html.light #toast-container > div {
     background-color: #ffffff !important;
-    color: #1e293b !important;
-    border-color: #e2e8f0 !important;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1) !important;
 }
 
-/* Custom Scrollbars */
-::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
+/* ==========================================================================
+   DATA TABLES (Clean, Comfortable, Readable)
+   ========================================================================== */
 
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-html.dark ::-webkit-scrollbar-thumb {
-    background: #475569;
-    border-radius: 9999px;
-}
-
-html.dark ::-webkit-scrollbar-thumb:hover {
-    background: #64748b;
-}
-
-html.light ::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 9999px;
-}
-
-html.light ::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
-}
-
-/* Glassmorphism & Card Effects */
-.glass-card {
-    background: rgba(30, 41, 59, 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-/* Data Grid Container */
 .data-table-container {
     height: 100%;
     overflow: auto;
     position: relative;
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
 }
 
 .data-table {
     border-collapse: separate;
     border-spacing: 0;
     width: 100%;
+    font-size: 13px;
+    line-height: 1.5;
 }
 
 .data-table thead th {
     position: sticky;
     top: 0;
     z-index: 10;
-    background: #1e293b;
-    border-bottom: 2px solid #334155;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
     white-space: nowrap;
+    user-select: none;
 }
 
+/* Dark Mode Table Headers */
+html.dark .data-table thead th {
+    background-color: #1e293b;
+    border-bottom: 2px solid #334155;
+    color: #cbd5e1;
+}
+
+/* Light Mode Table Headers */
+html.light .data-table thead th {
+    background-color: #f8fafc;
+    border-bottom: 2px solid #e2e8f0;
+    color: #475569;
+}
+
+/* Table Row Highlights & Zebra Striping */
 .data-table tbody tr {
-    transition: background-color 0.15s ease;
+    transition: background-color 0.12s ease;
 }
 
-.data-table tbody tr:hover {
-    background-color: rgba(51, 65, 85, 0.4);
+html.dark .data-table tbody tr:hover {
+    background-color: rgba(99, 102, 241, 0.1) !important;
 }
 
-.data-table tbody tr.selected-row {
-    background-color: rgba(99, 102, 241, 0.15) !important;
+html.light .data-table tbody tr:hover {
+    background-color: #f0f4ff !important;
+}
+
+html.dark .data-table tbody tr.selected-row {
+    background-color: rgba(99, 102, 241, 0.2) !important;
+}
+
+html.light .data-table tbody tr.selected-row {
+    background-color: #e0e7ff !important;
 }
 
 .data-table td {
-    border-bottom: 1px solid #1e293b;
     white-space: nowrap;
-    max-width: 320px;
+    max-width: 380px;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+html.dark .data-table td {
+    border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+    color: #e2e8f0;
+}
+
+html.light .data-table td {
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b;
 }
 
 /* Editable Cell */
@@ -316,34 +259,65 @@ html.light ::-webkit-scrollbar-thumb:hover {
     font-family: 'Font Awesome 6 Free';
     font-weight: 900;
     position: absolute;
-    right: 4px;
+    right: 6px;
     top: 50%;
     transform: translateY(-50%);
     font-size: 10px;
-    color: #818cf8;
-    opacity: 0.7;
-}
-
-html.light .editable-cell:hover::after {
-    color: #4f46e5;
+    color: #6366f1;
+    opacity: 0.6;
 }
 
 .cell-editing {
     outline: 2px solid #6366f1 !important;
-    background: #0f172a !important;
     padding: 0 !important;
+}
+
+html.dark .cell-editing {
+    background: #0f172a !important;
+}
+
+html.light .cell-editing {
+    background: #ffffff !important;
 }
 
 .cell-input {
     width: 100%;
     height: 100%;
-    background: #0f172a;
-    color: #f8fafc;
     border: none;
-    padding: 6px 8px;
-    font-size: 0.875rem;
+    padding: 6px 12px;
+    font-size: 13px;
     font-family: inherit;
     outline: none;
+}
+
+html.dark .cell-input {
+    background: #0f172a;
+    color: #f8fafc;
+}
+
+html.light .cell-input {
+    background: #ffffff;
+    color: #0f172a;
+}
+
+/* ==========================================================================
+   NULL Value Badge - Minimalist & Pleasant (No harsh border noise)
+   ========================================================================== */
+
+.badge-null {
+    font-style: italic;
+    font-size: 11px;
+    font-weight: 400;
+    user-select: none;
+    letter-spacing: 0.02em;
+}
+
+html.dark .badge-null {
+    color: #64748b;
+}
+
+html.light .badge-null {
+    color: #94a3b8;
 }
 
 /* Code & SQL Highlighting */
@@ -370,7 +344,7 @@ html.light .editable-cell:hover::after {
     font-style: italic;
 }
 
-/* Toast Animations */
+/* Toast Notifications */
 @keyframes slideInRight {
     from {
         transform: translateX(100%);
@@ -401,6 +375,13 @@ html.light .editable-cell:hover::after {
     animation: slideOutRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+html.light #toast-container > div {
+    background-color: #ffffff !important;
+    color: #1e293b !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1) !important;
+}
+
 /* Modal Transition */
 .modal-show {
     opacity: 1 !important;
@@ -412,20 +393,30 @@ html.light .editable-cell:hover::after {
     transform: scale(1) !important;
 }
 
-/* Null value badge */
-.badge-null {
-    font-style: italic;
-    font-size: 0.75rem;
-    color: #94a3b8;
-    background: rgba(148, 163, 184, 0.1);
-    padding: 2px 6px;
-    border-radius: 4px;
-    border: 1px dashed rgba(148, 163, 184, 0.3);
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
 }
 
-/* Tab active glowing underline */
-.tab-active {
-    color: #4f46e5 !important;
-    background: rgba(79, 70, 229, 0.08) !important;
-    border-bottom: 2px solid #4f46e5 !important;
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+    background: #475569;
+    border-radius: 9999px;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+html.light ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }

@@ -155,51 +155,53 @@ export const DataGrid = {
                             </button>
                         </div>
                     ` : `
-                        <table class="data-table text-xs font-mono">
+                        <table class="data-table text-xs font-sans">
                             <thead>
                                 <tr>
                                     <!-- Checkbox Column -->
-                                    <th class="w-10 px-3 py-2.5 text-center">
+                                    <th class="w-10 px-3 py-3 text-center">
                                         <input type="checkbox" id="grid-select-all" class="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0 cursor-pointer">
                                     </th>
                                     <!-- Action Menu Column -->
-                                    <th class="w-12 px-2 py-2.5 text-center text-slate-400">#</th>
+                                    <th class="w-12 px-2 py-3 text-center text-slate-400 font-medium">#</th>
 
                                     <!-- Table Column Headers -->
                                     ${columns.map(col => {
                                         const isSorted = this.sortCol === col.name;
                                         const sortIcon = isSorted 
-                                            ? (this.sortDir === 'ASC' ? 'fa-arrow-up-short-wide text-indigo-400' : 'fa-arrow-down-wide-short text-indigo-400')
-                                            : 'fa-sort text-slate-600 group-hover:text-slate-400';
+                                            ? (this.sortDir === 'ASC' ? 'fa-arrow-up text-indigo-600 dark:text-indigo-400' : 'fa-arrow-down text-indigo-600 dark:text-indigo-400')
+                                            : 'fa-sort text-slate-400 dark:text-slate-600 group-hover:text-slate-600 dark:group-hover:text-slate-300';
                                         const isPri = col.column_key === 'PRI';
                                         
                                         return `
-                                            <th class="px-3 py-2.5 text-left cursor-pointer select-none group transition hover:text-indigo-300" data-sort-col="${Formatter.escapeHtml(col.name)}">
-                                                <div class="flex items-center gap-1.5">
-                                                    ${isPri ? '<i class="fa-solid fa-key text-amber-400 text-[10px]" title="Primary Key"></i>' : ''}
-                                                    <span class="font-semibold text-slate-200">${Formatter.escapeHtml(col.name)}</span>
-                                                    <span class="text-[10px] text-slate-500 font-normal">(${Formatter.escapeHtml(col.data_type)})</span>
-                                                    <i class="fa-solid ${sortIcon} text-[10px] ml-1"></i>
+                                            <th class="px-4 py-3 text-left cursor-pointer select-none group transition hover:bg-slate-100 dark:hover:bg-slate-800" data-sort-col="${Formatter.escapeHtml(col.name)}">
+                                                <div class="flex items-center justify-between gap-2">
+                                                    <div class="flex items-center gap-1.5 truncate">
+                                                        ${isPri ? '<i class="fa-solid fa-key text-amber-500 text-[11px] flex-shrink-0" title="Primary Key"></i>' : ''}
+                                                        <span class="font-semibold text-slate-800 dark:text-slate-100 text-xs">${Formatter.escapeHtml(col.name)}</span>
+                                                        <span class="text-[10px] text-slate-400 dark:text-slate-500 font-normal">(${Formatter.escapeHtml(col.data_type)})</span>
+                                                    </div>
+                                                    <i class="fa-solid ${sortIcon} text-[10px] flex-shrink-0 ml-1"></i>
                                                 </div>
                                             </th>
                                         `;
                                     }).join('')}
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
                                 ${rows.map((row, rowIdx) => {
                                     const isRowSelected = this.selectedRowIndices.has(rowIdx);
                                     return `
-                                        <tr class="${isRowSelected ? 'selected-row' : ''}" data-row-idx="${rowIdx}">
+                                        <tr class="${isRowSelected ? 'selected-row' : ''} ${rowIdx % 2 === 1 ? 'bg-slate-50/50 dark:bg-slate-900/40' : 'bg-white dark:bg-slate-900/80'} hover:bg-indigo-50/40 dark:hover:bg-slate-800/50 transition-colors" data-row-idx="${rowIdx}">
                                             <!-- Checkbox Cell -->
-                                            <td class="px-3 py-2 text-center">
+                                            <td class="px-3 py-2.5 text-center">
                                                 <input type="checkbox" class="row-checkbox rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0 cursor-pointer" data-row-idx="${rowIdx}" ${isRowSelected ? 'checked' : ''}>
                                             </td>
 
                                             <!-- Row Actions Cell -->
-                                            <td class="px-2 py-2 text-center text-slate-400">
+                                            <td class="px-2 py-2.5 text-center text-slate-400">
                                                 <div class="flex items-center justify-center gap-1">
-                                                    <button class="row-delete-btn text-slate-500 hover:text-rose-400 transition" title="ลบแถวนี้" data-row-idx="${rowIdx}">
+                                                    <button class="row-delete-btn text-slate-400 hover:text-rose-500 transition p-1" title="ลบแถวนี้" data-row-idx="${rowIdx}">
                                                         <i class="fa-solid fa-trash-can text-xs"></i>
                                                     </button>
                                                 </div>
@@ -212,7 +214,7 @@ export const DataGrid = {
                                                 const displayVal = isNull ? '<span class="badge-null">NULL</span>' : Formatter.escapeHtml(val);
                                                 
                                                 return `
-                                                    <td class="px-3 py-2 editable-cell font-mono text-slate-200" 
+                                                    <td class="px-4 py-2.5 editable-cell text-slate-800 dark:text-slate-200 text-xs" 
                                                         data-col-name="${Formatter.escapeHtml(col.name)}" 
                                                         data-row-idx="${rowIdx}"
                                                         data-is-null="${isNull}">
