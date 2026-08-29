@@ -46,12 +46,18 @@ class App {
         if (!store.getState().auth.connected) {
             this.showConnectionModal();
         } else {
+            Header.render();
+            Sidebar.render();
             this.renderTabs();
             this.renderActiveView();
         }
+        this.updateFooter();
     }
 
     handleStateChange(event, state, payload) {
+        Header.render();
+        Sidebar.render();
+
         if (event === 'auth:connected') {
             this.hideConnectionModal();
             this.renderTabs();
@@ -60,7 +66,7 @@ class App {
         } else if (['auth:disconnected', 'appAuth:updated', 'appAuth:logout', 'appAuth:login'].includes(event)) {
             this.showConnectionModal();
             this.updateFooter();
-        } else if (['table:selected', 'database:selected', 'tab:changed'].includes(event)) {
+        } else if (['table:selected', 'database:selected', 'tab:changed', 'databases:updated', 'tables:updated'].includes(event)) {
             this.renderTabs();
             this.renderActiveView();
             this.updateFooter();

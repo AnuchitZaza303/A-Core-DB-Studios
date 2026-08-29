@@ -63,8 +63,12 @@
     </script>
     
     <?php
-        // Resolve assets base path relative to current URL
-        $baseUri = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+        // Resolve assets base path relative to current URL (Windows Server & Linux safe)
+        $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+        $baseUri = str_replace('\\', '/', rtrim(dirname($scriptName), '/\\'));
+        if ($baseUri === '.' || $baseUri === '/' || $baseUri === '\\') {
+            $baseUri = '';
+        }
         $assetPrefix = (str_ends_with($baseUri, 'public') || str_ends_with($baseUri, 'public/')) ? $baseUri : $baseUri . '/public';
         $assetPrefix = rtrim($assetPrefix, '/');
         
@@ -73,7 +77,7 @@
             $apiPrefix = substr($apiPrefix, 0, -7);
         }
         $apiPrefix = ($apiPrefix === '' ? '' : $apiPrefix) . '/api';
-        $assetVer = '1.0.8_' . time();
+        $assetVer = '1.1.0_' . time();
     ?>
     <link rel="stylesheet" href="<?= $assetPrefix ?>/assets/css/app.css?v=<?= $assetVer ?>">
 </head>
