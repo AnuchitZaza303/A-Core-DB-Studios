@@ -162,10 +162,23 @@ class Store {
         try {
             const res = await api.get('/databases', { include_system: '1' });
             if (res.data) {
+                const databases = res.data.databases || [];
+                let active = res.data.active || this.state.activeDatabase;
+
+                // Auto-select first available database if none is active
+                if (!active && databases.length > 0) {
+                    const nonSystem = databases.find(d => !['information_schema', 'performance_schema', 'mysql', 'sys', 'phpmyadmin'].includes(d.name.toLowerCase()));
+                    active = (nonSystem || databases[0]).name;
+                }
+
                 this.setState({
-                    databases: res.data.databases || [],
-                    activeDatabase: res.data.active || this.state.activeDatabase,
+                    databases: databases,
+                    activeDatabase: active,
                 }, 'databases:updated');
+
+                if (active) {
+                    await this.selectDatabase(active);
+                }
             }
         } catch (e) {
             Toast.error('ไม่สามารถโหลดรายชื่อฐานข้อมูลได้: ' + e.message);
@@ -183,6 +196,11 @@ class Store {
             }, 'database:selected');
 
             await this.refreshTables();
+
+            const tables = this.state.tables || [];
+            if (tables.length > 0 && !this.state.activeTable && this.state.activeTab !== 'server') {
+                this.selectTable(tables[0].name);
+            }
         } catch (e) {
             Toast.error('ไม่สามารถเลือกฐานข้อมูลได้: ' + e.message);
         }

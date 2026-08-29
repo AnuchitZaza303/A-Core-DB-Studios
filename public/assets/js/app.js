@@ -1,18 +1,18 @@
 /**
  * A-Core Database Studio - Master App Bootstrapper
  */
-import { store } from './store.js?v=1.0.5';
-import { api } from './api.js?v=1.0.5';
-import { Header } from './components/Header.js?v=1.0.5';
-import { Sidebar } from './components/Sidebar.js?v=1.0.5';
-import { DataGrid } from './components/DataGrid.js?v=1.0.5';
-import { SchemaViewer } from './components/SchemaViewer.js?v=1.0.5';
-import { SqlEditor } from './components/SqlEditor.js?v=1.0.5';
-import { ExportImport } from './components/ExportImport.js?v=1.0.5';
-import { ServerMonitor } from './components/ServerMonitor.js?v=1.0.5';
-import { Toast } from './utils/toast.js?v=1.0.5';
-import { Modal } from './components/Modal.js?v=1.0.5';
-import { Formatter } from './utils/formatter.js?v=1.0.5';
+import { store } from './store.js';
+import { api } from './api.js';
+import { Header } from './components/Header.js';
+import { Sidebar } from './components/Sidebar.js';
+import { DataGrid } from './components/DataGrid.js';
+import { SchemaViewer } from './components/SchemaViewer.js';
+import { SqlEditor } from './components/SqlEditor.js';
+import { ExportImport } from './components/ExportImport.js';
+import { ServerMonitor } from './components/ServerMonitor.js';
+import { Toast } from './utils/toast.js';
+import { Modal } from './components/Modal.js';
+import { Formatter } from './utils/formatter.js';
 
 class App {
     constructor() {
