@@ -403,11 +403,10 @@ export const ServerMonitor = {
                         <thead class="bg-slate-950/80 text-slate-400 border-b border-slate-800">
                             <tr>
                                 <th class="px-4 py-3">ID</th>
-                                <th class="px-4 py-3">User</th>
-                                <th class="px-4 py-3">Host</th>
+                                <th class="px-4 py-3">User & Host</th>
                                 <th class="px-4 py-3">Database</th>
-                                <th class="px-4 py-3">Command</th>
-                                <th class="px-4 py-3">Time</th>
+                                <th class="px-4 py-3">Command / Activity</th>
+                                <th class="px-4 py-3">Duration (หลอดเวลา)</th>
                                 <th class="px-4 py-3">State</th>
                                 <th class="px-4 py-3">Info / Query</th>
                                 <th class="px-4 py-3 text-right">Action</th>
@@ -424,26 +423,87 @@ export const ServerMonitor = {
 
     renderProcessRows() {
         if (this.processes.length === 0) {
-            return `<tr><td colspan="9" class="p-6 text-center text-slate-500 font-sans">ไม่มี Process ที่กำลังทำงาน</td></tr>`;
+            return `<tr><td colspan="8" class="p-6 text-center text-slate-500 font-sans">ไม่มี Process ที่กำลังทำงาน</td></tr>`;
         }
 
         return this.processes.map(p => {
-            const timeStr = p.Time !== null && p.Time !== undefined ? `${p.Time}s` : '-';
+            const time = p.Time !== null && p.Time !== undefined ? Number(p.Time) : 0;
+            const timeStr = p.Time !== null && p.Time !== undefined ? `${time}s` : '-';
+            
+            // Calculate duration progress bar percentage (scale of 0-60s or log for visual)
+            const timePct = Math.min(100, Math.max(3, Math.round((time / 60) * 100)));
+            let timeBarColor = 'bg-emerald-500';
+            if (time > 30) {
+                timeBarColor = 'bg-rose-500 animate-pulse';
+            } else if (time > 5) {
+                timeBarColor = 'bg-amber-500';
+            }
+
+            // Command / Activity Badge
+            let commandBadge = '';
+            if (p.Command === 'Query') {
+                commandBadge = `
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                        <span>Executing Query</span>
+                    </span>
+                `;
+            } else if (p.Command === 'Sleep') {
+                commandBadge = `
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                        <i class="fa-solid fa-moon text-[9px] opacity-70"></i>
+                        <span>Idle / Sleep</span>
+                    </span>
+                `;
+            } else if (p.Command === 'Daemon' || p.Command === 'Binlog Dump') {
+                commandBadge = `
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-medium">
+                        <i class="fa-solid fa-server text-[9px]"></i>
+                        <span>${Formatter.escapeHtml(p.Command)}</span>
+                    </span>
+                `;
+            } else {
+                commandBadge = `
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                        <span>${Formatter.escapeHtml(p.Command || '-')}</span>
+                    </span>
+                `;
+            }
+
+            // State styling
+            let stateHtml = Formatter.escapeHtml(p.State || '-');
+            if (p.State && p.State.toLowerCase().includes('lock')) {
+                stateHtml = `<span class="px-2 py-0.5 rounded text-[10px] bg-rose-500/15 text-rose-500 font-semibold border border-rose-500/30 animate-pulse"><i class="fa-solid fa-lock text-[9px] mr-1"></i> ${Formatter.escapeHtml(p.State)}</span>`;
+            } else if (p.State && (p.State.toLowerCase().includes('send') || p.State.toLowerCase().includes('sort') || p.State.toLowerCase().includes('copy'))) {
+                stateHtml = `<span class="px-2 py-0.5 rounded text-[10px] bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 font-medium border border-cyan-500/20"><i class="fa-solid fa-arrows-spin fa-spin text-[9px] mr-1"></i> ${Formatter.escapeHtml(p.State)}</span>`;
+            }
+
             return `
                 <tr class="hover:bg-slate-800/50 transition">
-                    <td class="px-4 py-3 text-indigo-500 font-bold">${p.Id}</td>
-                    <td class="px-4 py-3 text-slate-300">${Formatter.escapeHtml(p.User)}</td>
-                    <td class="px-4 py-3 text-slate-400 truncate max-w-[120px]">${Formatter.escapeHtml(p.Host)}</td>
-                    <td class="px-4 py-3 text-cyan-400 font-semibold">${Formatter.escapeHtml(p.db || '-')}</td>
-                    <td class="px-4 py-3">
-                        <span class="px-2 py-0.5 rounded text-[10px] ${p.Command === 'Query' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'}">
-                            ${Formatter.escapeHtml(p.Command)}
-                        </span>
+                    <td class="px-4 py-3 text-indigo-500 font-bold">#${p.Id}</td>
+                    <td class="px-4 py-3 text-slate-300">
+                        <div class="font-medium">${Formatter.escapeHtml(p.User)}</div>
+                        <div class="text-[10px] text-slate-500 truncate max-w-[130px] font-sans">${Formatter.escapeHtml(p.Host || '-')}</div>
                     </td>
-                    <td class="px-4 py-3 text-amber-600 dark:text-amber-400 font-bold">${timeStr}</td>
-                    <td class="px-4 py-3 text-slate-400">${Formatter.escapeHtml(p.State || '-')}</td>
+                    <td class="px-4 py-3 text-cyan-400 font-semibold">${Formatter.escapeHtml(p.db || '-')}</td>
+                    <td class="px-4 py-3">${commandBadge}</td>
+                    
+                    <!-- Duration & Progress Load Bar -->
+                    <td class="px-4 py-3">
+                        <div class="space-y-1 w-24">
+                            <div class="flex items-center justify-between text-[11px]">
+                                <span class="font-bold font-mono ${time > 30 ? 'text-rose-600 dark:text-rose-400' : (time > 5 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-600 dark:text-slate-300')}">${timeStr}</span>
+                                <span class="text-[9px] text-slate-500 font-sans">${time > 30 ? 'Slow' : ''}</span>
+                            </div>
+                            <div class="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                                <div class="h-full rounded-full transition-all duration-300 ${timeBarColor}" style="width: ${timePct}%"></div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <td class="px-4 py-3 text-slate-400">${stateHtml}</td>
                     <td class="px-4 py-3 text-slate-200 max-w-xs truncate" title="${Formatter.escapeHtml(p.Info || '')}">
-                        ${Formatter.escapeHtml(p.Info || '-')}
+                        ${p.Info ? `<code class="text-[11px] bg-slate-950/60 px-1.5 py-0.5 rounded text-indigo-300 border border-slate-800">${Formatter.escapeHtml(p.Info)}</code>` : '<span class="text-slate-600">-</span>'}
                     </td>
                     <td class="px-4 py-3 text-right font-sans">
                         <button class="btn-kill-proc px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white dark:bg-rose-950/40 dark:hover:bg-rose-900 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 transition text-xs font-medium" data-proc-id="${p.Id}">
