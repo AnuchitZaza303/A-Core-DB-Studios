@@ -75,7 +75,7 @@ export const Sidebar = {
             </div>
 
             <!-- Tables List Container -->
-            <div class="flex-1 overflow-y-auto p-1.5 space-y-0.5" id="sidebar-table-list">
+            <div class="flex-1 overflow-y-auto p-2 space-y-1" id="sidebar-table-list">
                 ${!activeDb ? `
                     <div class="p-6 text-center text-slate-400 text-xs space-y-2">
                         <i class="fa-solid fa-arrow-up text-indigo-400 text-lg animate-bounce"></i>
@@ -92,21 +92,25 @@ export const Sidebar = {
                 ` : tables.map(table => {
                     const isSelected = table.name === state.activeTable;
                     return `
-                        <div class="group flex items-center justify-between px-2.5 py-1.25 rounded-lg text-xs cursor-pointer transition ${
+                        <div class="group flex items-center justify-between px-3 py-2 rounded-xl text-[13px] cursor-pointer transition-all duration-150 ${
                             isSelected 
-                                ? 'bg-indigo-50 dark:bg-indigo-600/15 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-500/30 font-semibold' 
-                                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-white'
+                                ? 'bg-indigo-50 dark:bg-indigo-600/20 text-indigo-700 dark:text-indigo-200 border border-indigo-200/80 dark:border-indigo-500/30 font-semibold shadow-xs' 
+                                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70 hover:text-slate-900 dark:hover:text-white border border-transparent'
                         }" data-table="${Formatter.escapeHtml(table.name)}">
-                            <div class="flex items-center gap-2 truncate flex-1 pointer-events-none">
-                                <i class="fa-solid ${table.type === 'VIEW' ? 'fa-eye text-cyan-600 dark:text-cyan-400' : (isSelected ? 'fa-table text-indigo-600 dark:text-indigo-400' : 'fa-table text-slate-400 dark:text-slate-500 group-hover:text-indigo-500')} text-[11px] flex-shrink-0"></i>
-                                <span class="truncate text-[12px]">${Formatter.escapeHtml(table.name)}</span>
+                            <div class="flex items-center gap-2.5 truncate flex-1 pointer-events-none min-w-0">
+                                <i class="fa-solid ${table.type === 'VIEW' ? 'fa-eye text-cyan-600 dark:text-cyan-400' : (isSelected ? 'fa-table-cells text-indigo-600 dark:text-indigo-400' : 'fa-table-cells text-slate-400 dark:text-slate-500 group-hover:text-indigo-600')} text-xs flex-shrink-0"></i>
+                                <span class="truncate leading-tight">${Formatter.escapeHtml(table.name)}</span>
                             </div>
-                            <div class="flex items-center gap-1 flex-shrink-0">
-                                <span class="text-[10px] font-sans text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.2 rounded font-normal">
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                                <span class="text-[11px] font-sans px-2 py-0.5 rounded-full transition ${
+                                    isSelected 
+                                        ? 'bg-indigo-100/80 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-semibold' 
+                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                                }">
                                     ${Formatter.formatNumber(table.rows || 0)}
                                 </span>
-                                <button class="table-context-btn opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-rose-500 transition" title="จัดการตาราง" data-table="${Formatter.escapeHtml(table.name)}">
-                                    <i class="fa-solid fa-ellipsis-vertical text-[10px]"></i>
+                                <button class="table-context-btn opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-700 dark:hover:text-white transition" title="จัดการตาราง" data-table="${Formatter.escapeHtml(table.name)}">
+                                    <i class="fa-solid fa-ellipsis text-xs"></i>
                                 </button>
                             </div>
                         </div>
