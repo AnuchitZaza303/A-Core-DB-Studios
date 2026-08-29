@@ -1,5 +1,5 @@
 /**
- * ServerMonitor Component (Process List, Variables, Server Performance)
+ * ServerMonitor Component (Real-Time Process List, Variables, Live Server Performance)
  */
 import { api } from '../api.js';
 import { Toast } from '../utils/toast.js';
@@ -13,14 +13,41 @@ export const ServerMonitor = {
     variables: [],
     varSearch: '',
     activeTab: 'processes', // processes | status | variables
+    timer: null,
+    autoRefresh: true,
+    refreshInterval: 1000, // 1000 ms (1 second)
+    isPolling: false,
 
     init(targetContainer) {
         this.container = targetContainer;
         this.loadData();
+        this.startTimer();
+    },
+
+    destroy() {
+        this.stopTimer();
+    },
+
+    startTimer() {
+        this.stopTimer();
+        if (!this.autoRefresh) return;
+        this.timer = setInterval(async () => {
+            if (this.isPolling) return;
+            await this.pollData();
+        }, this.refreshInterval);
+    },
+
+    stopTimer() {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
     },
 
     async loadData() {
-        this.renderLoading();
+        if (!this.statusData) {
+            this.renderLoading();
+        }
         try {
             const [statusRes, procRes] = await Promise.all([
                 api.get('/server/status'),
@@ -32,6 +59,68 @@ export const ServerMonitor = {
             this.render();
         } catch (e) {
             this.renderError(e.message);
+        }
+    },
+
+    async pollData() {
+        this.isPolling = true;
+        try {
+            const [statusRes, procRes] = await Promise.all([
+                api.get('/server/status'),
+                api.get('/server/processes'),
+            ]);
+
+            this.statusData = statusRes.data;
+            this.processes = procRes.data || [];
+            
+            // Update in-place without re-rendering the whole page to prevent flicker
+            this.updateLiveMetrics();
+        } catch (e) {
+            // Silently ignore background polling network blips
+        } finally {
+            this.isPolling = false;
+        }
+    },
+
+    updateLiveMetrics() {
+        if (!this.container) return;
+        const s = this.statusData || {};
+
+        // Uptime
+        const uptimeEl = document.getElementById('srv-uptime-val');
+        if (uptimeEl) uptimeEl.textContent = this.formatUptime(s.uptime || 0);
+
+        // Threads
+        const threadsEl = document.getElementById('srv-threads-val');
+        if (threadsEl) {
+            threadsEl.innerHTML = `${Formatter.formatNumber(s.threads_connected || 0)} <span class="text-xs font-normal text-slate-400">conn</span>`;
+        }
+        const threadsSub = document.getElementById('srv-threads-sub');
+        if (threadsSub) threadsSub.textContent = `Running: ${s.threads_running || 0}`;
+
+        // Queries
+        const queriesEl = document.getElementById('srv-queries-val');
+        if (queriesEl) queriesEl.textContent = Formatter.formatNumber(s.queries || s.questions || 0);
+        const queriesSub = document.getElementById('srv-queries-sub');
+        if (queriesSub) queriesSub.textContent = `Slow: ${s.slow_queries || 0}`;
+
+        // Traffic In / Out
+        const trafficIn = document.getElementById('srv-traffic-in');
+        if (trafficIn) trafficIn.textContent = `In: ${Formatter.formatBytes(s.bytes_received || 0)}`;
+        const trafficOut = document.getElementById('srv-traffic-out');
+        if (trafficOut) trafficOut.textContent = `Out: ${Formatter.formatBytes(s.bytes_sent || 0)}`;
+
+        // Process List Count
+        const procCountBadge = document.getElementById('srv-proc-count');
+        if (procCountBadge) procCountBadge.textContent = this.processes.length;
+
+        // Process List Table Rows (if on processes tab)
+        if (this.activeTab === 'processes') {
+            const tableBody = document.getElementById('srv-proc-tbody');
+            if (tableBody) {
+                tableBody.innerHTML = this.renderProcessRows();
+                this.bindKillButtons();
+            }
         }
     },
 
@@ -69,7 +158,7 @@ export const ServerMonitor = {
                             <span>Uptime</span>
                             <i class="fa-solid fa-clock text-indigo-400"></i>
                         </div>
-                        <div class="text-lg font-bold text-slate-100">${this.formatUptime(s.uptime || 0)}</div>
+                        <div id="srv-uptime-val" class="text-lg font-bold text-slate-100">${this.formatUptime(s.uptime || 0)}</div>
                         <div class="text-[11px] text-slate-500 font-mono">MySQL ${Formatter.escapeHtml(s.variables?.version || '')}</div>
                     </div>
 
@@ -78,8 +167,10 @@ export const ServerMonitor = {
                             <span>Threads Active</span>
                             <i class="fa-solid fa-bolt text-emerald-400"></i>
                         </div>
-                        <div class="text-lg font-bold text-emerald-400">${Formatter.formatNumber(s.threads_connected || 0)} <span class="text-xs font-normal text-slate-400">conn</span></div>
-                        <div class="text-[11px] text-slate-500 font-mono">Running: ${s.threads_running || 0}</div>
+                        <div id="srv-threads-val" class="text-lg font-bold text-emerald-400">
+                            ${Formatter.formatNumber(s.threads_connected || 0)} <span class="text-xs font-normal text-slate-400">conn</span>
+                        </div>
+                        <div id="srv-threads-sub" class="text-[11px] text-slate-500 font-mono">Running: ${s.threads_running || 0}</div>
                     </div>
 
                     <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-1 shadow-lg">
@@ -87,8 +178,8 @@ export const ServerMonitor = {
                             <span>Total Queries</span>
                             <i class="fa-solid fa-chart-line text-cyan-400"></i>
                         </div>
-                        <div class="text-lg font-bold text-cyan-300">${Formatter.formatNumber(s.queries || s.questions || 0)}</div>
-                        <div class="text-[11px] text-slate-500 font-mono">Slow: ${s.slow_queries || 0}</div>
+                        <div id="srv-queries-val" class="text-lg font-bold text-cyan-300">${Formatter.formatNumber(s.queries || s.questions || 0)}</div>
+                        <div id="srv-queries-sub" class="text-[11px] text-slate-500 font-mono">Slow: ${s.slow_queries || 0}</div>
                     </div>
 
                     <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-1 shadow-lg">
@@ -99,22 +190,22 @@ export const ServerMonitor = {
                         <div class="text-xs font-semibold text-slate-200 mt-1 font-mono space-y-1">
                             <div class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
                                 <i class="fa-solid fa-arrow-down text-[10px]"></i>
-                                <span>In: ${Formatter.formatBytes(s.bytes_received || 0)}</span>
+                                <span id="srv-traffic-in">In: ${Formatter.formatBytes(s.bytes_received || 0)}</span>
                             </div>
                             <div class="text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
                                 <i class="fa-solid fa-arrow-up text-[10px]"></i>
-                                <span>Out: ${Formatter.formatBytes(s.bytes_sent || 0)}</span>
+                                <span id="srv-traffic-out">Out: ${Formatter.formatBytes(s.bytes_sent || 0)}</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Navigation Tabs -->
-                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <!-- Navigation Tabs & Live Controls -->
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
                     <div class="flex space-x-2 text-xs">
                         <button id="srvtab-proc" class="px-4 py-2 rounded-xl font-medium transition flex items-center gap-2 ${this.activeTab === 'processes' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white bg-slate-900/60'}">
                             <i class="fa-solid fa-list-check"></i>
-                            <span>Process List (${this.processes.length})</span>
+                            <span>Process List (<span id="srv-proc-count">${this.processes.length}</span>)</span>
                         </button>
                         <button id="srvtab-vars" class="px-4 py-2 rounded-xl font-medium transition flex items-center gap-2 ${this.activeTab === 'variables' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-white bg-slate-900/60'}">
                             <i class="fa-solid fa-gears"></i>
@@ -122,10 +213,30 @@ export const ServerMonitor = {
                         </button>
                     </div>
 
-                    <button id="srv-refresh-btn" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5 transition">
-                        <i class="fa-solid fa-arrows-rotate"></i>
-                        <span>รีเฟรช</span>
-                    </button>
+                    <!-- Right Controls: Live Badge, Auto Refresh Interval, Manual Refresh -->
+                    <div class="flex items-center gap-2.5">
+                        
+                        <!-- Live Indicator Badge & Interval Selector -->
+                        <div class="flex items-center bg-slate-900/80 border border-slate-800 rounded-xl px-2.5 py-1 text-xs gap-2 shadow-xs">
+                            <span class="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 ${this.autoRefresh ? 'animate-pulse' : 'opacity-40'}"></span>
+                                <span>${this.autoRefresh ? 'Live' : 'Paused'}</span>
+                            </span>
+                            
+                            <select id="srv-interval-select" class="bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-lg px-2 py-0.5 focus:outline-none focus:border-indigo-500 cursor-pointer">
+                                <option value="1000" ${this.refreshInterval === 1000 && this.autoRefresh ? 'selected' : ''}>วิต่อวิ (1s)</option>
+                                <option value="2000" ${this.refreshInterval === 2000 && this.autoRefresh ? 'selected' : ''}>2 วินาที</option>
+                                <option value="5000" ${this.refreshInterval === 5000 && this.autoRefresh ? 'selected' : ''}>5 วินาที</option>
+                                <option value="0" ${!this.autoRefresh ? 'selected' : ''}>ปิดอัปเดตอัตโนมัติ</option>
+                            </select>
+                        </div>
+
+                        <!-- Manual Refresh Button -->
+                        <button id="srv-refresh-btn" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-medium flex items-center gap-1.5 transition">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                            <span>รีเฟรช</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Tab Panels Area -->
@@ -155,40 +266,46 @@ export const ServerMonitor = {
                                 <th class="px-4 py-3 text-right">Action</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-800/80">
-                            ${this.processes.length === 0 ? `
-                                <tr><td colspan="9" class="p-6 text-center text-slate-500 font-sans">ไม่มี Process ที่กำลังทำงาน</td></tr>
-                            ` : this.processes.map(p => {
-                                const timeStr = p.Time !== null && p.Time !== undefined ? `${p.Time}s` : '-';
-                                return `
-                                    <tr class="hover:bg-slate-800/50 transition">
-                                        <td class="px-4 py-3 text-indigo-500 font-bold">${p.Id}</td>
-                                        <td class="px-4 py-3 text-slate-300">${Formatter.escapeHtml(p.User)}</td>
-                                        <td class="px-4 py-3 text-slate-400 truncate max-w-[120px]">${Formatter.escapeHtml(p.Host)}</td>
-                                        <td class="px-4 py-3 text-cyan-400 font-semibold">${Formatter.escapeHtml(p.db || '-')}</td>
-                                        <td class="px-4 py-3">
-                                            <span class="px-2 py-0.5 rounded text-[10px] ${p.Command === 'Query' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'}">
-                                                ${Formatter.escapeHtml(p.Command)}
-                                            </span>
-                                        </td>
-                                        <td class="px-4 py-3 text-amber-600 dark:text-amber-400 font-bold">${timeStr}</td>
-                                        <td class="px-4 py-3 text-slate-400">${Formatter.escapeHtml(p.State || '-')}</td>
-                                        <td class="px-4 py-3 text-slate-200 max-w-xs truncate" title="${Formatter.escapeHtml(p.Info || '')}">
-                                            ${Formatter.escapeHtml(p.Info || '-')}
-                                        </td>
-                                        <td class="px-4 py-3 text-right font-sans">
-                                            <button class="btn-kill-proc px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white dark:bg-rose-950/40 dark:hover:bg-rose-900 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 transition text-xs font-medium" data-proc-id="${p.Id}">
-                                                <i class="fa-solid fa-power-off mr-1"></i> Kill
-                                            </button>
-                                        </td>
-                                    </tr>
-                                `;
-                            }).join('')}
+                        <tbody class="divide-y divide-slate-800/80" id="srv-proc-tbody">
+                            ${this.renderProcessRows()}
                         </tbody>
                     </table>
                 </div>
             </div>
         `;
+    },
+
+    renderProcessRows() {
+        if (this.processes.length === 0) {
+            return `<tr><td colspan="9" class="p-6 text-center text-slate-500 font-sans">ไม่มี Process ที่กำลังทำงาน</td></tr>`;
+        }
+
+        return this.processes.map(p => {
+            const timeStr = p.Time !== null && p.Time !== undefined ? `${p.Time}s` : '-';
+            return `
+                <tr class="hover:bg-slate-800/50 transition">
+                    <td class="px-4 py-3 text-indigo-500 font-bold">${p.Id}</td>
+                    <td class="px-4 py-3 text-slate-300">${Formatter.escapeHtml(p.User)}</td>
+                    <td class="px-4 py-3 text-slate-400 truncate max-w-[120px]">${Formatter.escapeHtml(p.Host)}</td>
+                    <td class="px-4 py-3 text-cyan-400 font-semibold">${Formatter.escapeHtml(p.db || '-')}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 rounded text-[10px] ${p.Command === 'Query' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'}">
+                            ${Formatter.escapeHtml(p.Command)}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-amber-600 dark:text-amber-400 font-bold">${timeStr}</td>
+                    <td class="px-4 py-3 text-slate-400">${Formatter.escapeHtml(p.State || '-')}</td>
+                    <td class="px-4 py-3 text-slate-200 max-w-xs truncate" title="${Formatter.escapeHtml(p.Info || '')}">
+                        ${Formatter.escapeHtml(p.Info || '-')}
+                    </td>
+                    <td class="px-4 py-3 text-right font-sans">
+                        <button class="btn-kill-proc px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white dark:bg-rose-950/40 dark:hover:bg-rose-900 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 transition text-xs font-medium" data-proc-id="${p.Id}">
+                            <i class="fa-solid fa-power-off mr-1"></i> Kill
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     },
 
     renderVariables() {
@@ -243,25 +360,31 @@ export const ServerMonitor = {
             this.render();
         });
 
-        document.getElementById('srv-refresh-btn')?.addEventListener('click', () => {
-            this.loadData();
+        document.getElementById('srv-refresh-btn')?.addEventListener('click', async () => {
+            await this.pollData();
+            Toast.success('อัปเดตสถานะเซิร์ฟเวอร์เรียบร้อย');
         });
 
-        // Kill Process
-        this.container.querySelectorAll('.btn-kill-proc').forEach(btn => {
-            btn.onclick = () => {
-                const procId = btn.getAttribute('data-proc-id');
-                Modal.confirm('ยุติ Process', `คุณต้องการ Kill Process #${procId} หรือไม่?`, {
-                    danger: true,
-                    confirmText: 'Kill Process',
-                    onConfirm: async () => {
-                        await api.post('/server/kill-process', { id: procId });
-                        Toast.success(`ยุติ Process #${procId} แล้ว`);
-                        this.loadData();
-                    }
-                });
+        // Interval selector change
+        const intervalSelect = document.getElementById('srv-interval-select');
+        if (intervalSelect) {
+            intervalSelect.onchange = (e) => {
+                const val = parseInt(e.target.value, 10);
+                if (val === 0) {
+                    this.autoRefresh = false;
+                    this.stopTimer();
+                    Toast.info('ปิดการอัปเดตอัตโนมัติแล้ว');
+                } else {
+                    this.autoRefresh = true;
+                    this.refreshInterval = val;
+                    this.startTimer();
+                    Toast.success(`ตั้งค่าอัปเดตสดทุก ${val / 1000} วินาที`);
+                }
+                this.render();
             };
-        });
+        }
+
+        this.bindKillButtons();
 
         // Variables Search
         const varSearchInput = document.getElementById('srv-var-search');
@@ -278,6 +401,23 @@ export const ServerMonitor = {
                 if (e.key === 'Enter') doSearch();
             };
         }
+    },
+
+    bindKillButtons() {
+        this.container?.querySelectorAll('.btn-kill-proc').forEach(btn => {
+            btn.onclick = () => {
+                const procId = btn.getAttribute('data-proc-id');
+                Modal.confirm('ยุติ Process', `คุณต้องการ Kill Process #${procId} หรือไม่?`, {
+                    danger: true,
+                    confirmText: 'Kill Process',
+                    onConfirm: async () => {
+                        await api.post('/server/kill-process', { id: procId });
+                        Toast.success(`ยุติ Process #${procId} แล้ว`);
+                        await this.pollData();
+                    }
+                });
+            };
+        });
     },
 
     async loadVariables() {

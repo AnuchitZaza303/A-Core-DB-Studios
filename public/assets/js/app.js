@@ -129,6 +129,10 @@ class App {
 
         const tab = state.activeTab;
 
+        if (tab !== 'server') {
+            ServerMonitor.destroy();
+        }
+
         if (tab === 'data') {
             DataGrid.init(this.contentArea);
         } else if (tab === 'structure') {
