@@ -30,8 +30,10 @@ class ApiClient {
         }
         const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
 
+        const token = localStorage.getItem('acore_session_token');
         const headers = {
             'X-Requested-With': 'XMLHttpRequest',
+            ...(token ? { 'X-Acore-Token': token } : {}),
             ...(options.headers || {})
         };
 
@@ -48,6 +50,11 @@ class ApiClient {
             });
 
             const data = await response.json().catch(() => null);
+
+            // Persist session token if provided by backend
+            if (data?.data?.token) {
+                localStorage.setItem('acore_session_token', data.data.token);
+            }
 
             if (!response.ok) {
                 const errorMsg = data?.message || `Request failed with status ${response.status}`;

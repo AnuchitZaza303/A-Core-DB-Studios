@@ -102,6 +102,7 @@ class Store {
             databases: [],
             tables: [],
         }, 'appAuth:logout');
+        localStorage.removeItem('acore_session_token');
         Toast.info('ออกจากระบบแล้ว');
     }
 

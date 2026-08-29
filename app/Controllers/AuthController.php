@@ -20,6 +20,7 @@ class AuthController
             'auth_required' => $authRequired,
             'authenticated' => $authenticated,
             'username' => $authenticated ? Session::get('app_user', 'Admin') : null,
+            'token' => Session::getToken(),
         ]);
     }
 
@@ -61,6 +62,7 @@ class AuthController
             'authenticated' => true,
             'username' => $username,
             'db_connected' => Database::isConnected(),
+            'token' => Session::getToken(),
         ], 'เข้าสู่ระบบ A-Core Studio สำเร็จ');
     }
 
@@ -114,6 +116,7 @@ class AuthController
                 'active_database' => $database,
                 'host' => $host,
                 'port' => $port,
+                'token' => Session::getToken(),
             ], 'เชื่อมต่อฐานข้อมูลสำเร็จ');
         } catch (Exception $e) {
             Response::error($e->getMessage(), 400);
@@ -146,6 +149,7 @@ class AuthController
                 'connected' => false,
                 'server_version' => null,
                 'active_database' => null,
+                'token' => Session::getToken(),
             ]);
             return;
         }
@@ -164,12 +168,14 @@ class AuthController
                 'host' => $connection['host'] ?? '127.0.0.1',
                 'port' => $connection['port'] ?? 3306,
                 'active_database' => Session::getActiveDatabase(),
+                'token' => Session::getToken(),
             ]);
         } catch (Exception $e) {
             Session::clearConnection();
             Response::success([
                 'connected' => false,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'token' => Session::getToken(),
             ]);
         }
     }
