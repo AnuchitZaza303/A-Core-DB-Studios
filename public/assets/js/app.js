@@ -1,18 +1,18 @@
 /**
  * A-Core Database Studio - Master App Bootstrapper
  */
-import { store } from './store.js';
-import { api } from './api.js';
-import { Header } from './components/Header.js';
-import { Sidebar } from './components/Sidebar.js';
-import { DataGrid } from './components/DataGrid.js';
-import { SchemaViewer } from './components/SchemaViewer.js';
-import { SqlEditor } from './components/SqlEditor.js';
-import { ExportImport } from './components/ExportImport.js';
-import { ServerMonitor } from './components/ServerMonitor.js';
-import { Toast } from './utils/toast.js';
-import { Modal } from './components/Modal.js';
-import { Formatter } from './utils/formatter.js';
+import { store } from './store.js?v=1.0.5';
+import { api } from './api.js?v=1.0.5';
+import { Header } from './components/Header.js?v=1.0.5';
+import { Sidebar } from './components/Sidebar.js?v=1.0.5';
+import { DataGrid } from './components/DataGrid.js?v=1.0.5';
+import { SchemaViewer } from './components/SchemaViewer.js?v=1.0.5';
+import { SqlEditor } from './components/SqlEditor.js?v=1.0.5';
+import { ExportImport } from './components/ExportImport.js?v=1.0.5';
+import { ServerMonitor } from './components/ServerMonitor.js?v=1.0.5';
+import { Toast } from './utils/toast.js?v=1.0.5';
+import { Modal } from './components/Modal.js?v=1.0.5';
+import { Formatter } from './utils/formatter.js?v=1.0.5';
 
 class App {
     constructor() {
@@ -243,7 +243,22 @@ class App {
                     btn.disabled = true;
                     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> กำลังเข้าสู่ระบบ...';
                     try {
-                        await store.appLogin(u, p);
+                        if (typeof store.appLogin === 'function') {
+                            await store.appLogin(u, p);
+                        } else {
+                            const res = await api.post('/auth/app-login', { username: u, password: p });
+                            if (res.data?.authenticated) {
+                                store.setState({
+                                    appAuth: {
+                                        required: true,
+                                        authenticated: true,
+                                        username: res.data.username,
+                                    }
+                                }, 'appAuth:login');
+                                Toast.success('เข้าสู่ระบบ A-Core Studio สำเร็จ');
+                                await store.checkAuthStatus();
+                            }
+                        }
                     } catch (err) {
                         Toast.error(err.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
                         btn.disabled = false;
