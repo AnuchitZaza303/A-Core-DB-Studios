@@ -52,11 +52,13 @@
         }
     </script>
     
-    <!-- Instant Theme Initializer -->
+    <!-- Instant Theme & Zoom Initializer -->
     <script>
         (function() {
             const savedTheme = localStorage.getItem('acore_theme') || 'light';
             document.documentElement.className = savedTheme;
+            const savedZoom = localStorage.getItem('acore_zoom') || '100%';
+            document.documentElement.style.zoom = savedZoom;
         })();
     </script>
     

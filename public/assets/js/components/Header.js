@@ -11,7 +11,7 @@ export const Header = {
     init() {
         this.container = document.getElementById('app-header');
         store.subscribe((event, state) => {
-            if (['auth:connected', 'auth:disconnected', 'database:selected', 'databases:updated', 'theme:changed'].includes(event)) {
+            if (['auth:connected', 'auth:disconnected', 'database:selected', 'databases:updated', 'theme:changed', 'zoom:changed'].includes(event)) {
                 this.render();
             }
         });
@@ -50,10 +50,10 @@ export const Header = {
         `).join('');
 
         this.container.innerHTML = `
-            <!-- Left: Logo & DB Selector -->
-            <div class="flex items-center gap-4">
-                <div class="flex items-center gap-2.5 cursor-pointer" id="header-logo-btn">
-                    <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+            <!-- Left: Brand Logo & Database Selector -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/25">
                         <i class="fa-solid fa-layer-group text-white text-sm"></i>
                     </div>
                     <div>
@@ -85,8 +85,46 @@ export const Header = {
                 </div>
             </div>
 
-            <!-- Right: Theme Switcher & Connection Profile -->
-            <div class="flex items-center gap-3">
+            <!-- Right: Zoom Scale, Theme Switcher & Connection Profile -->
+            <div class="flex items-center gap-2.5">
+                
+                <!-- Zoom / Scale Control Menu -->
+                <div class="flex items-center bg-slate-800 border border-slate-700 rounded-xl p-0.5 text-xs text-slate-300 relative shadow-xs">
+                    <button id="header-zoom-out-btn" title="ย่อขนาด (-10%)" class="w-6 h-6 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+                        <i class="fa-solid fa-minus text-[9px]"></i>
+                    </button>
+                    
+                    <div class="relative">
+                        <button id="header-zoom-menu-btn" title="ปรับขนาดการแสดงผลโดยรวม (%)" class="px-2 py-0.5 text-xs font-semibold text-slate-200 hover:text-indigo-400 flex items-center gap-1 transition">
+                            <i class="fa-solid fa-magnifying-glass text-[10px] text-slate-400"></i>
+                            <span>${state.zoom || 100}%</span>
+                            <i class="fa-solid fa-chevron-down text-[8px] opacity-60"></i>
+                        </button>
+                        
+                        <!-- Zoom Dropdown Menu -->
+                        <div id="header-zoom-dropdown" class="hidden absolute right-0 mt-2 w-40 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl py-1.5 z-50 text-xs text-slate-200">
+                            <div class="px-3 py-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-700/60 mb-1">
+                                ขนาดการแสดงผล (%)
+                            </div>
+                            ${[75, 85, 90, 100, 110, 125, 150].map(pct => `
+                                <button class="zoom-select-item w-full px-3 py-1.5 text-left flex items-center justify-between hover:bg-indigo-600 hover:text-white transition ${state.zoom === pct ? 'text-indigo-400 font-bold bg-slate-700/50' : ''}" data-zoom="${pct}">
+                                    <span>${pct}%</span>
+                                    ${state.zoom === pct ? '<i class="fa-solid fa-check text-[10px]"></i>' : (pct === 100 ? '<span class="text-[10px] opacity-60">ค่าเริ่มต้น</span>' : '')}
+                                </button>
+                            `).join('')}
+                            <div class="border-t border-slate-700/60 my-1"></div>
+                            <button id="zoom-reset-btn" class="w-full px-3 py-1.5 text-left text-slate-400 hover:bg-slate-700 hover:text-white flex items-center gap-2 text-xs transition">
+                                <i class="fa-solid fa-rotate-left text-[10px]"></i>
+                                <span>รีเซ็ตกลับ 100%</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button id="header-zoom-in-btn" title="ขยายขนาด (+10%)" class="w-6 h-6 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+                        <i class="fa-solid fa-plus text-[9px]"></i>
+                    </button>
+                </div>
+
                 <!-- Theme Toggle Button -->
                 <button id="header-theme-btn" title="สลับธีม สว่าง / มืด" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white flex items-center gap-1.5 text-xs transition">
                     <i class="fa-solid ${state.theme === 'dark' ? 'fa-moon text-indigo-400' : 'fa-sun text-amber-500'} text-xs"></i>
@@ -129,6 +167,50 @@ export const Header = {
                 await store.refreshDatabases();
                 await store.refreshTables();
                 Toast.success('รีเฟรชข้อมูลเรียบร้อย');
+            };
+        }
+
+        // Zoom Controls
+        const zoomMenuBtn = document.getElementById('header-zoom-menu-btn');
+        const zoomDropdown = document.getElementById('header-zoom-dropdown');
+        if (zoomMenuBtn && zoomDropdown) {
+            zoomMenuBtn.onclick = (e) => {
+                e.stopPropagation();
+                zoomDropdown.classList.toggle('hidden');
+            };
+
+            document.addEventListener('click', (e) => {
+                if (!zoomMenuBtn.contains(e.target) && !zoomDropdown.contains(e.target)) {
+                    zoomDropdown.classList.add('hidden');
+                }
+            });
+        }
+
+        const zoomInBtn = document.getElementById('header-zoom-in-btn');
+        if (zoomInBtn) {
+            zoomInBtn.onclick = () => store.stepZoom(10);
+        }
+
+        const zoomOutBtn = document.getElementById('header-zoom-out-btn');
+        if (zoomOutBtn) {
+            zoomOutBtn.onclick = () => store.stepZoom(-10);
+        }
+
+        document.querySelectorAll('.zoom-select-item').forEach(item => {
+            item.onclick = (e) => {
+                const pct = parseInt(item.getAttribute('data-zoom'), 10);
+                if (pct) {
+                    store.setZoom(pct);
+                    zoomDropdown?.classList.add('hidden');
+                }
+            };
+        });
+
+        const zoomResetBtn = document.getElementById('zoom-reset-btn');
+        if (zoomResetBtn) {
+            zoomResetBtn.onclick = () => {
+                store.setZoom(100);
+                zoomDropdown?.classList.add('hidden');
             };
         }
 

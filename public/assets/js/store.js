@@ -20,6 +20,7 @@ class Store {
             databases: [],
             tables: [],
             theme: localStorage.getItem('acore_theme') || 'light',
+            zoom: parseInt(localStorage.getItem('acore_zoom') || '100', 10) || 100,
             loading: false,
         };
 
@@ -157,6 +158,21 @@ class Store {
         localStorage.setItem('acore_theme', nextTheme);
         document.documentElement.className = nextTheme;
         Toast.info(nextTheme === 'dark' ? 'เปลี่ยนเป็นธีมมืด (Dark Mode)' : 'เปลี่ยนเป็นธีมสว่าง (Light Mode)', 2000);
+    }
+
+    setZoom(percent, showToast = true) {
+        const validZoom = Math.min(Math.max(parseInt(percent, 10) || 100, 60), 200);
+        this.setState({ zoom: validZoom }, 'zoom:changed');
+        document.documentElement.style.zoom = validZoom + '%';
+        localStorage.setItem('acore_zoom', validZoom + '%');
+        if (showToast) {
+            Toast.info(`ปรับขนาดการแสดงผลเป็น ${validZoom}% เรียบร้อย`, 1500);
+        }
+    }
+
+    stepZoom(delta) {
+        const current = this.state.zoom || 100;
+        this.setZoom(current + delta);
     }
 }
 
