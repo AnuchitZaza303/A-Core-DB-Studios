@@ -120,16 +120,18 @@ class Store {
 
         try {
             const res = await api.get('/auth/status');
-            if (res.data?.connected) {
+            const isConnected = !!(res?.data?.connected || res?.connected);
+            if (isConnected) {
+                const data = res.data || res;
                 this.setState({
                     auth: {
                         connected: true,
-                        user: res.data.user,
-                        host: res.data.host,
-                        port: res.data.port,
-                        server_version: res.data.server_version,
+                        user: data.user,
+                        host: data.host,
+                        port: data.port,
+                        server_version: data.server_version,
                     },
-                    activeDatabase: res.data.active_database || null,
+                    activeDatabase: data.active_database || null,
                 }, 'auth:connected');
 
                 await this.refreshDatabases();

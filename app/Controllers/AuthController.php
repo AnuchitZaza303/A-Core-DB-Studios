@@ -122,12 +122,31 @@ class AuthController
 
     public function status(): void
     {
+        $config = require __DIR__ . '/../../config/app.php';
+
+        // Auto-connect to database if session is authenticated and auto_connect_db is enabled
+        if (!Database::isConnected() && Session::get('app_authenticated') && !empty($config['auto_connect_db'])) {
+            $defaultConn = [
+                'host' => $config['default_host'] ?? '127.0.0.1',
+                'port' => (int)($config['default_port'] ?? 3306),
+                'user' => $config['default_user'] ?? 'root',
+                'password' => $config['default_password'] ?? '',
+                'charset' => 'utf8mb4',
+            ];
+            try {
+                Database::connect($defaultConn);
+                Session::setConnection($defaultConn);
+            } catch (\Exception $e) {
+                // If auto-connect fails, status will return connected: false
+            }
+        }
+
         if (!Database::isConnected()) {
-            Response::json([
+            Response::success([
                 'connected' => false,
                 'server_version' => null,
                 'active_database' => null,
-            ], 200);
+            ]);
             return;
         }
 
@@ -148,10 +167,10 @@ class AuthController
             ]);
         } catch (Exception $e) {
             Session::clearConnection();
-            Response::json([
+            Response::success([
                 'connected' => false,
                 'error' => $e->getMessage()
-            ], 200);
+            ]);
         }
     }
 
