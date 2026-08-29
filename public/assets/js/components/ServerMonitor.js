@@ -478,6 +478,58 @@ export const ServerMonitor = {
                 stateHtml = `<span class="px-2 py-0.5 rounded text-[10px] bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 font-medium border border-cyan-500/20"><i class="fa-solid fa-arrows-spin fa-spin text-[9px] mr-1"></i> ${Formatter.escapeHtml(p.State)}</span>`;
             }
 
+            // Duration & Progress Load Bar Logic
+            let durationHtml = '';
+            if (p.User === 'system user' || p.Time === null || p.Time === undefined) {
+                durationHtml = `
+                    <div class="text-[11px] text-slate-500 dark:text-slate-400 font-sans flex items-center gap-1">
+                        <i class="fa-solid fa-gears text-[10px] opacity-60"></i>
+                        <span>เบื้องหลังระบบ</span>
+                    </div>
+                `;
+            } else if (p.Command === 'Sleep') {
+                const sleepPct = Math.min(100, Math.max(5, Math.round((time / 300) * 100)));
+                durationHtml = `
+                    <div class="space-y-1 w-28">
+                        <div class="flex items-center justify-between text-[11px]">
+                            <span class="font-mono text-slate-500 dark:text-slate-400">${timeStr}</span>
+                            <span class="text-[9px] text-slate-500 font-sans bg-slate-100 dark:bg-slate-800/80 px-1.5 py-0.2 rounded">Idle (พัก)</span>
+                        </div>
+                        <div class="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                            <div class="h-full rounded-full bg-slate-400/50 dark:bg-slate-600 transition-all duration-300" style="width: ${sleepPct}%"></div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Active Running Query or other commands
+                const timePct = Math.min(100, Math.max(5, Math.round((time / 60) * 100)));
+                let timeBarColor = 'bg-emerald-500';
+                let timeLabel = 'Active';
+                let timeTextClass = 'text-emerald-600 dark:text-emerald-400 font-bold';
+
+                if (time > 30) {
+                    timeBarColor = 'bg-rose-500 animate-pulse';
+                    timeLabel = 'Slow Query';
+                    timeTextClass = 'text-rose-600 dark:text-rose-400 font-bold';
+                } else if (time > 5) {
+                    timeBarColor = 'bg-amber-500';
+                    timeLabel = 'Running';
+                    timeTextClass = 'text-amber-600 dark:text-amber-400 font-bold';
+                }
+
+                durationHtml = `
+                    <div class="space-y-1 w-28">
+                        <div class="flex items-center justify-between text-[11px]">
+                            <span class="font-mono ${timeTextClass}">${timeStr}</span>
+                            <span class="text-[9px] font-sans ${time > 30 ? 'text-rose-500 font-bold' : 'text-emerald-500 font-semibold'}">${timeLabel}</span>
+                        </div>
+                        <div class="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-300 ${timeBarColor}" style="width: ${timePct}%"></div>
+                        </div>
+                    </div>
+                `;
+            }
+
             return `
                 <tr class="hover:bg-slate-800/50 transition">
                     <td class="px-4 py-3 text-indigo-500 font-bold">#${p.Id}</td>
@@ -490,15 +542,7 @@ export const ServerMonitor = {
                     
                     <!-- Duration & Progress Load Bar -->
                     <td class="px-4 py-3">
-                        <div class="space-y-1 w-24">
-                            <div class="flex items-center justify-between text-[11px]">
-                                <span class="font-bold font-mono ${time > 30 ? 'text-rose-600 dark:text-rose-400' : (time > 5 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-600 dark:text-slate-300')}">${timeStr}</span>
-                                <span class="text-[9px] text-slate-500 font-sans">${time > 30 ? 'Slow' : ''}</span>
-                            </div>
-                            <div class="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-                                <div class="h-full rounded-full transition-all duration-300 ${timeBarColor}" style="width: ${timePct}%"></div>
-                            </div>
-                        </div>
+                        ${durationHtml}
                     </td>
 
                     <td class="px-4 py-3 text-slate-400">${stateHtml}</td>
