@@ -1,5 +1,5 @@
 /**
- * ServerMonitor Component (Real-Time Process List, Variables, Live Server Performance)
+ * ServerMonitor Component (Real-Time Process List, Variables, Live Resource Usage Bars)
  */
 import { api } from '../api.js';
 import { Toast } from '../utils/toast.js';
@@ -86,29 +86,79 @@ export const ServerMonitor = {
         if (!this.container) return;
         const s = this.statusData || {};
 
+        const maxConn = s.max_connections || 151;
+        const conn = s.threads_connected || 0;
+        const connPct = s.connection_percent || (maxConn > 0 ? Math.round((conn / maxConn) * 100) : 0);
+
+        const bufferTotal = s.buffer_pool_size || 0;
+        const bufferUsed = s.buffer_used_bytes || 0;
+        const bufferPct = s.buffer_percent || 0;
+
+        const openTables = s.open_tables || 0;
+        const tableCache = s.table_open_cache || 400;
+        const tableCachePct = s.table_cache_percent || 0;
+
         // Uptime
         const uptimeEl = document.getElementById('srv-uptime-val');
         if (uptimeEl) uptimeEl.textContent = this.formatUptime(s.uptime || 0);
 
-        // Threads
-        const threadsEl = document.getElementById('srv-threads-val');
-        if (threadsEl) {
-            threadsEl.innerHTML = `${Formatter.formatNumber(s.threads_connected || 0)} <span class="text-xs font-normal text-slate-400">conn</span>`;
+        // Card 1: Connections
+        const connVal = document.getElementById('srv-conn-val');
+        if (connVal) connVal.innerHTML = `${conn} <span class="text-xs font-normal text-slate-400">/ ${maxConn} (${connPct}%)</span>`;
+        const connBar = document.getElementById('srv-conn-bar');
+        if (connBar) {
+            connBar.style.width = `${Math.min(100, Math.max(2, connPct))}%`;
+            connBar.className = `h-full rounded-full transition-all duration-500 ${connPct > 85 ? 'bg-rose-500' : (connPct > 60 ? 'bg-amber-500' : 'bg-emerald-500')}`;
         }
-        const threadsSub = document.getElementById('srv-threads-sub');
-        if (threadsSub) threadsSub.textContent = `Running: ${s.threads_running || 0}`;
+        const connSub = document.getElementById('srv-conn-sub');
+        if (connSub) connSub.textContent = `Running: ${s.threads_running || 0} | Peak: ${s.max_used_connections || conn}`;
 
-        // Queries
-        const queriesEl = document.getElementById('srv-queries-val');
-        if (queriesEl) queriesEl.textContent = Formatter.formatNumber(s.queries || s.questions || 0);
-        const queriesSub = document.getElementById('srv-queries-sub');
-        if (queriesSub) queriesSub.textContent = `Slow: ${s.slow_queries || 0}`;
+        // Card 2: Buffer Pool (RAM)
+        const bufVal = document.getElementById('srv-buf-val');
+        if (bufVal) bufVal.innerHTML = `${Formatter.formatBytes(bufferUsed)} <span class="text-xs font-normal text-slate-400">/ ${Formatter.formatBytes(bufferTotal)} (${bufferPct}%)</span>`;
+        const bufBar = document.getElementById('srv-buf-bar');
+        if (bufBar) bufBar.style.width = `${Math.min(100, Math.max(2, bufferPct))}%`;
 
-        // Traffic In / Out
+        // Card 3: Table Cache
+        const cacheVal = document.getElementById('srv-cache-val');
+        if (cacheVal) cacheVal.innerHTML = `${openTables} <span class="text-xs font-normal text-slate-400">/ ${tableCache} (${tableCachePct}%)</span>`;
+        const cacheBar = document.getElementById('srv-cache-bar');
+        if (cacheBar) cacheBar.style.width = `${Math.min(100, Math.max(2, tableCachePct))}%`;
+
+        // Card 4: Queries & Traffic
+        const queriesVal = document.getElementById('srv-queries-val');
+        if (queriesVal) queriesVal.textContent = Formatter.formatNumber(s.queries || s.questions || 0);
         const trafficIn = document.getElementById('srv-traffic-in');
         if (trafficIn) trafficIn.textContent = `In: ${Formatter.formatBytes(s.bytes_received || 0)}`;
         const trafficOut = document.getElementById('srv-traffic-out');
         if (trafficOut) trafficOut.textContent = `Out: ${Formatter.formatBytes(s.bytes_sent || 0)}`;
+
+        // Detailed Gauge 1: Connections
+        const gConnPct = document.getElementById('gauge-conn-pct');
+        if (gConnPct) gConnPct.textContent = `${connPct}%`;
+        const gConnDetail = document.getElementById('gauge-conn-detail');
+        if (gConnDetail) gConnDetail.textContent = `${conn} / ${maxConn} connections`;
+        const gConnBar = document.getElementById('gauge-conn-bar');
+        if (gConnBar) {
+            gConnBar.style.width = `${Math.min(100, Math.max(2, connPct))}%`;
+            gConnBar.className = `h-full rounded-full transition-all duration-500 ${connPct > 85 ? 'bg-rose-500' : (connPct > 60 ? 'bg-amber-500' : 'bg-emerald-500')}`;
+        }
+
+        // Detailed Gauge 2: Buffer
+        const gBufPct = document.getElementById('gauge-buf-pct');
+        if (gBufPct) gBufPct.textContent = `${bufferPct}%`;
+        const gBufDetail = document.getElementById('gauge-buf-detail');
+        if (gBufDetail) gBufDetail.textContent = `${Formatter.formatBytes(bufferUsed)} / ${Formatter.formatBytes(bufferTotal)}`;
+        const gBufBar = document.getElementById('gauge-buf-bar');
+        if (gBufBar) gBufBar.style.width = `${Math.min(100, Math.max(2, bufferPct))}%`;
+
+        // Detailed Gauge 3: Cache
+        const gCachePct = document.getElementById('gauge-cache-pct');
+        if (gCachePct) gCachePct.textContent = `${tableCachePct}%`;
+        const gCacheDetail = document.getElementById('gauge-cache-detail');
+        if (gCacheDetail) gCacheDetail.textContent = `${openTables} / ${tableCache} tables`;
+        const gCacheBar = document.getElementById('gauge-cache-bar');
+        if (gCacheBar) gCacheBar.style.width = `${Math.min(100, Math.max(2, tableCachePct))}%`;
 
         // Process List Count
         const procCountBadge = document.getElementById('srv-proc-count');
@@ -148,55 +198,152 @@ export const ServerMonitor = {
         if (!this.container) return;
         const s = this.statusData || {};
 
+        const maxConn = s.max_connections || 151;
+        const conn = s.threads_connected || 0;
+        const connPct = s.connection_percent || (maxConn > 0 ? Math.round((conn / maxConn) * 100) : 0);
+
+        const bufferTotal = s.buffer_pool_size || 0;
+        const bufferUsed = s.buffer_used_bytes || 0;
+        const bufferPct = s.buffer_percent || 0;
+
+        const openTables = s.open_tables || 0;
+        const tableCache = s.table_open_cache || 400;
+        const tableCachePct = s.table_cache_percent || 0;
+
         this.container.innerHTML = `
             <div class="max-w-6xl mx-auto space-y-6 pb-12">
                 
-                <!-- Server Metrics Overview Cards -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-1 shadow-lg">
+                <!-- 4 Top Cards with Progress Loaders -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    
+                    <!-- Card 1: MySQL Connections Gauge -->
+                    <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-2.5 shadow-lg">
                         <div class="text-slate-400 text-xs flex items-center justify-between">
-                            <span>Uptime</span>
-                            <i class="fa-solid fa-clock text-indigo-400"></i>
-                        </div>
-                        <div id="srv-uptime-val" class="text-lg font-bold text-slate-100">${this.formatUptime(s.uptime || 0)}</div>
-                        <div class="text-[11px] text-slate-500 font-mono">MySQL ${Formatter.escapeHtml(s.variables?.version || '')}</div>
-                    </div>
-
-                    <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-1 shadow-lg">
-                        <div class="text-slate-400 text-xs flex items-center justify-between">
-                            <span>Threads Active</span>
+                            <span class="font-semibold">MySQL Connections</span>
                             <i class="fa-solid fa-bolt text-emerald-400"></i>
                         </div>
-                        <div id="srv-threads-val" class="text-lg font-bold text-emerald-400">
-                            ${Formatter.formatNumber(s.threads_connected || 0)} <span class="text-xs font-normal text-slate-400">conn</span>
-                        </div>
-                        <div id="srv-threads-sub" class="text-[11px] text-slate-500 font-mono">Running: ${s.threads_running || 0}</div>
-                    </div>
-
-                    <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-1 shadow-lg">
-                        <div class="text-slate-400 text-xs flex items-center justify-between">
-                            <span>Total Queries</span>
-                            <i class="fa-solid fa-chart-line text-cyan-400"></i>
-                        </div>
-                        <div id="srv-queries-val" class="text-lg font-bold text-cyan-300">${Formatter.formatNumber(s.queries || s.questions || 0)}</div>
-                        <div id="srv-queries-sub" class="text-[11px] text-slate-500 font-mono">Slow: ${s.slow_queries || 0}</div>
-                    </div>
-
-                    <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-1 shadow-lg">
-                        <div class="text-slate-400 text-xs flex items-center justify-between">
-                            <span>Traffic (In / Out)</span>
-                            <i class="fa-solid fa-network-wired text-amber-400"></i>
-                        </div>
-                        <div class="text-xs font-semibold text-slate-200 mt-1 font-mono space-y-1">
-                            <div class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                                <i class="fa-solid fa-arrow-down text-[10px]"></i>
-                                <span id="srv-traffic-in">In: ${Formatter.formatBytes(s.bytes_received || 0)}</span>
+                        <div>
+                            <div id="srv-conn-val" class="text-base font-bold text-slate-100">
+                                ${conn} <span class="text-xs font-normal text-slate-400">/ ${maxConn} (${connPct}%)</span>
                             </div>
-                            <div class="text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
-                                <i class="fa-solid fa-arrow-up text-[10px]"></i>
-                                <span id="srv-traffic-out">Out: ${Formatter.formatBytes(s.bytes_sent || 0)}</span>
+                            <div class="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden mt-1.5">
+                                <div id="srv-conn-bar" class="h-full rounded-full transition-all duration-500 ${connPct > 85 ? 'bg-rose-500' : (connPct > 60 ? 'bg-amber-500' : 'bg-emerald-500')}" style="width: ${Math.min(100, Math.max(2, connPct))}%"></div>
                             </div>
                         </div>
+                        <div id="srv-conn-sub" class="text-[11px] text-slate-400 flex items-center justify-between pt-0.5">
+                            <span>Running: ${s.threads_running || 0}</span>
+                            <span>Peak: ${s.max_used_connections || conn}</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: InnoDB Buffer Pool (RAM Usage) -->
+                    <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-2.5 shadow-lg">
+                        <div class="text-slate-400 text-xs flex items-center justify-between">
+                            <span class="font-semibold">InnoDB Buffer (RAM)</span>
+                            <i class="fa-solid fa-microchip text-indigo-400"></i>
+                        </div>
+                        <div>
+                            <div id="srv-buf-val" class="text-base font-bold text-slate-100">
+                                ${Formatter.formatBytes(bufferUsed)} <span class="text-xs font-normal text-slate-400">/ ${Formatter.formatBytes(bufferTotal)} (${bufferPct}%)</span>
+                            </div>
+                            <div class="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden mt-1.5">
+                                <div id="srv-buf-bar" class="h-full rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400 transition-all duration-500" style="width: ${Math.min(100, Math.max(2, bufferPct))}%"></div>
+                            </div>
+                        </div>
+                        <div class="text-[11px] text-slate-400 flex items-center justify-between pt-0.5">
+                            <span>Memory Pool</span>
+                            <span class="text-indigo-400 font-semibold">${bufferPct}% Used</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Table Cache Open -->
+                    <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-2.5 shadow-lg">
+                        <div class="text-slate-400 text-xs flex items-center justify-between">
+                            <span class="font-semibold">Table Open Cache</span>
+                            <i class="fa-solid fa-database text-cyan-400"></i>
+                        </div>
+                        <div>
+                            <div id="srv-cache-val" class="text-base font-bold text-slate-100">
+                                ${openTables} <span class="text-xs font-normal text-slate-400">/ ${tableCache} (${tableCachePct}%)</span>
+                            </div>
+                            <div class="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden mt-1.5">
+                                <div id="srv-cache-bar" class="h-full rounded-full bg-gradient-to-r from-cyan-500 to-emerald-400 transition-all duration-500" style="width: ${Math.min(100, Math.max(2, tableCachePct))}%"></div>
+                            </div>
+                        </div>
+                        <div class="text-[11px] text-slate-400 flex items-center justify-between pt-0.5">
+                            <span>Open Handles</span>
+                            <span class="text-cyan-400 font-semibold">${tableCachePct}% Used</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 4: Uptime & Traffic Overview -->
+                    <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-2 shadow-lg">
+                        <div class="text-slate-400 text-xs flex items-center justify-between">
+                            <span class="font-semibold">Server Uptime</span>
+                            <i class="fa-solid fa-clock text-amber-400"></i>
+                        </div>
+                        <div id="srv-uptime-val" class="text-base font-bold text-slate-100">${this.formatUptime(s.uptime || 0)}</div>
+                        <div class="text-[11px] text-slate-400 flex items-center justify-between pt-0.5 font-mono">
+                            <span id="srv-traffic-in" class="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                <i class="fa-solid fa-arrow-down text-[9px]"></i> In: ${Formatter.formatBytes(s.bytes_received || 0)}
+                            </span>
+                            <span id="srv-traffic-out" class="text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                                <i class="fa-solid fa-arrow-up text-[9px]"></i> Out: ${Formatter.formatBytes(s.bytes_sent || 0)}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Resource Usage Bars (หลอดโหลดแสดงสัดส่วนทรัพยากร) -->
+                <div class="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-4 shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-indigo-400"></i>
+                            <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider">สัดส่วนการใช้งานทรัพยากรระบบ (Resource Load & Capacity Gauges)</h3>
+                        </div>
+                        <div class="text-xs text-slate-400">
+                            MySQL ${Formatter.escapeHtml(s.variables?.version || '')} (${Formatter.escapeHtml(s.variables?.version_comment || '')})
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-1">
+                        
+                        <!-- Usage Meter 1: Connections -->
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="font-medium text-slate-300">Connection Load</span>
+                                <span id="gauge-conn-pct" class="font-bold text-emerald-400">${connPct}%</span>
+                            </div>
+                            <div class="w-full h-3 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden p-0.5">
+                                <div id="gauge-conn-bar" class="h-full rounded-full transition-all duration-500 ${connPct > 85 ? 'bg-rose-500' : (connPct > 60 ? 'bg-amber-500' : 'bg-emerald-500')}" style="width: ${Math.min(100, Math.max(2, connPct))}%"></div>
+                            </div>
+                            <div id="gauge-conn-detail" class="text-[11px] text-slate-400 text-right">${conn} / ${maxConn} connections</div>
+                        </div>
+
+                        <!-- Usage Meter 2: InnoDB Buffer Pool (Memory) -->
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="font-medium text-slate-300">InnoDB Buffer Memory</span>
+                                <span id="gauge-buf-pct" class="font-bold text-indigo-400">${bufferPct}%</span>
+                            </div>
+                            <div class="w-full h-3 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden p-0.5">
+                                <div id="gauge-buf-bar" class="h-full rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 transition-all duration-500" style="width: ${Math.min(100, Math.max(2, bufferPct))}%"></div>
+                            </div>
+                            <div id="gauge-buf-detail" class="text-[11px] text-slate-400 text-right">${Formatter.formatBytes(bufferUsed)} / ${Formatter.formatBytes(bufferTotal)}</div>
+                        </div>
+
+                        <!-- Usage Meter 3: Table Cache -->
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="font-medium text-slate-300">Table Open Cache</span>
+                                <span id="gauge-cache-pct" class="font-bold text-cyan-400">${tableCachePct}%</span>
+                            </div>
+                            <div class="w-full h-3 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden p-0.5">
+                                <div id="gauge-cache-bar" class="h-full rounded-full bg-gradient-to-r from-cyan-500 to-teal-400 transition-all duration-500" style="width: ${Math.min(100, Math.max(2, tableCachePct))}%"></div>
+                            </div>
+                            <div id="gauge-cache-detail" class="text-[11px] text-slate-400 text-right">${openTables} / ${tableCache} tables</div>
+                        </div>
+
                     </div>
                 </div>
 
