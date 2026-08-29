@@ -10,6 +10,50 @@ use PDO;
 
 class AuthController
 {
+    public function appStatus(): void
+    {
+        $config = require __DIR__ . '/../../config/app.php';
+        $authRequired = !empty($config['auth_required']);
+        $authenticated = $authRequired ? (Session::get('app_authenticated') === true) : true;
+
+        Response::success([
+            'auth_required' => $authRequired,
+            'authenticated' => $authenticated,
+            'username' => $authenticated ? Session::get('app_user', 'Admin') : null,
+        ]);
+    }
+
+    public function appLogin(Request $request): void
+    {
+        $config = require __DIR__ . '/../../config/app.php';
+        $username = trim((string)$request->post('username', ''));
+        $password = (string)$request->post('password', '');
+
+        $expectedUser = (string)($config['admin_username'] ?? 'admin');
+        $expectedPass = (string)($config['admin_password'] ?? 'admin1234');
+
+        if ($username !== $expectedUser || $password !== $expectedPass) {
+            Response::error('ชื่อผู้ใช้หรือรหัสผ่านระบบไม่ถูกต้อง', 401);
+            return;
+        }
+
+        Session::set('app_authenticated', true);
+        Session::set('app_user', $username);
+
+        Response::success([
+            'authenticated' => true,
+            'username' => $username,
+        ], 'เข้าสู่ระบบ A-Core Studio สำเร็จ');
+    }
+
+    public function appLogout(): void
+    {
+        Session::remove('app_authenticated');
+        Session::remove('app_user');
+        Session::clearConnection();
+        Response::success(null, 'ออกจากระบบ A-Core Studio เรียบร้อย');
+    }
+
     public function connect(Request $request): void
     {
         $host = $request->post('host', '127.0.0.1');

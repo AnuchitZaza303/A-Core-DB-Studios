@@ -7,6 +7,11 @@ import { Toast } from './utils/toast.js';
 class Store {
     constructor() {
         this.state = {
+            appAuth: {
+                required: false,
+                authenticated: true,
+                username: null,
+            },
             auth: {
                 connected: false,
                 user: '',
@@ -45,7 +50,64 @@ class Store {
         this.emit(eventName, newState);
     }
 
+    async checkAppAuth() {
+        try {
+            const res = await api.get('/auth/app-status');
+            if (res.data) {
+                this.setState({
+                    appAuth: {
+                        required: res.data.auth_required,
+                        authenticated: res.data.authenticated,
+                        username: res.data.username,
+                    }
+                }, 'appAuth:updated');
+                return res.data.authenticated;
+            }
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    async appLogin(username, password) {
+        const res = await api.post('/auth/app-login', { username, password });
+        if (res.data?.authenticated) {
+            this.setState({
+                appAuth: {
+                    required: true,
+                    authenticated: true,
+                    username: res.data.username,
+                }
+            }, 'appAuth:login');
+            Toast.success('เข้าสู่ระบบ A-Core Studio สำเร็จ');
+            await this.checkAuthStatus();
+        }
+        return res;
+    }
+
+    async appLogout() {
+        await api.post('/auth/app-logout');
+        this.setState({
+            appAuth: {
+                required: true,
+                authenticated: false,
+                username: null,
+            },
+            auth: { connected: false },
+            activeDatabase: null,
+            activeTable: null,
+            databases: [],
+            tables: [],
+        }, 'appAuth:logout');
+        Toast.info('ออกจากระบบแล้ว');
+    }
+
     async checkAuthStatus() {
+        const isAppAuthed = await this.checkAppAuth();
+        if (!isAppAuthed) {
+            return;
+        }
+
         try {
             const res = await api.get('/auth/status');
             if (res.data?.connected) {

@@ -222,14 +222,41 @@ export const Header = {
         const disconnectBtn = document.getElementById('header-disconnect-btn');
         if (disconnectBtn) {
             disconnectBtn.onclick = () => {
-                Modal.confirm('ออกจากระบบ', 'คุณต้องการตัดการเชื่อมต่อฐานข้อมูลหรือไม่?', {
-                    danger: true,
-                    confirmText: 'ตัดการเชื่อมต่อ',
-                    onConfirm: async () => {
-                        await api.post('/auth/disconnect');
-                        store.setState({ auth: { connected: false } }, 'auth:disconnected');
-                        Toast.info('ตัดการเชื่อมต่อแล้ว');
-                    }
+                const isAppAuth = store.getState().appAuth.required;
+                Modal.custom({
+                    title: '<i class="fa-solid fa-power-off text-rose-500 mr-2"></i> ออกจากระบบ / ล็อกระบบ',
+                    bodyHtml: `
+                        <div class="space-y-4 text-xs text-slate-300">
+                            <p>คุณต้องการดำเนินการอย่างไร?</p>
+                            <div class="space-y-2">
+                                <button id="modal-disconnect-db-btn" class="w-full px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-left flex items-center justify-between border border-slate-700 transition">
+                                    <span><i class="fa-solid fa-database mr-2 text-indigo-400"></i> ตัดการเชื่อมต่อฐานข้อมูล (สลับ DB/User)</span>
+                                    <i class="fa-solid fa-chevron-right text-[10px] text-slate-500"></i>
+                                </button>
+                                ${isAppAuth ? `
+                                    <button id="modal-logout-app-btn" class="w-full px-4 py-2.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 rounded-xl text-left flex items-center justify-between border border-rose-900/50 transition">
+                                        <span><i class="fa-solid fa-lock mr-2 text-rose-400"></i> ล็อกและออกจากระบบ A-Core Studio ทั้งหมด</span>
+                                        <i class="fa-solid fa-chevron-right text-[10px] text-rose-500"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `,
+                    footerHtml: `
+                        <button type="button" class="btn-cancel px-4 py-2 rounded-xl text-xs text-slate-400 hover:text-white transition">ยกเลิก</button>
+                    `
+                });
+
+                document.getElementById('modal-disconnect-db-btn')?.addEventListener('click', async () => {
+                    Modal.close();
+                    await api.post('/auth/disconnect');
+                    store.setState({ auth: { connected: false } }, 'auth:disconnected');
+                    Toast.info('ตัดการเชื่อมต่อฐานข้อมูลแล้ว');
+                });
+
+                document.getElementById('modal-logout-app-btn')?.addEventListener('click', async () => {
+                    Modal.close();
+                    await store.appLogout();
                 });
             };
         }
