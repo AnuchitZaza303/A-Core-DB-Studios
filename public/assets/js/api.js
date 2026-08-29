@@ -115,4 +115,5 @@ class ApiClient {
     }
 }
 
-export const api = new ApiClient();
+window.__ACORE_API__ = window.__ACORE_API__ || new ApiClient();
+export const api = window.__ACORE_API__;

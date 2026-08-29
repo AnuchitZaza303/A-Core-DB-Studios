@@ -11,7 +11,7 @@ export const Header = {
     init() {
         this.container = document.getElementById('app-header');
         store.subscribe((event, state) => {
-            if (['auth:connected', 'auth:disconnected', 'database:selected', 'databases:updated', 'theme:changed', 'zoom:changed'].includes(event)) {
+            if (['auth:connected', 'auth:disconnected', 'appAuth:login', 'appAuth:logout', 'database:selected', 'databases:updated', 'theme:changed', 'zoom:changed'].includes(event)) {
                 this.render();
             }
         });

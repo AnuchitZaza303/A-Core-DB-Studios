@@ -73,7 +73,7 @@
             $apiPrefix = substr($apiPrefix, 0, -7);
         }
         $apiPrefix = ($apiPrefix === '' ? '' : $apiPrefix) . '/api';
-        $assetVer = '1.0.5_' . time();
+        $assetVer = '1.0.6_' . time();
     ?>
     <link rel="stylesheet" href="<?= $assetPrefix ?>/assets/css/app.css?v=<?= $assetVer ?>">
 </head>

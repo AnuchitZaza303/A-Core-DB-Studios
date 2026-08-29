@@ -251,4 +251,5 @@ class Store {
     }
 }
 
-export const store = new Store();
+window.__ACORE_STORE__ = window.__ACORE_STORE__ || new Store();
+export const store = window.__ACORE_STORE__;

@@ -13,7 +13,7 @@ export const Sidebar = {
         this.filterText = '';
 
         store.subscribe((event, state) => {
-            if (['auth:connected', 'auth:disconnected', 'database:selected', 'databases:updated', 'tables:updated', 'table:selected'].includes(event)) {
+            if (['auth:connected', 'auth:disconnected', 'appAuth:login', 'appAuth:logout', 'database:selected', 'databases:updated', 'tables:updated', 'table:selected'].includes(event)) {
                 this.render();
             }
         });
